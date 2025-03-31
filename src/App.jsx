@@ -6,9 +6,9 @@ import "./App.css";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <main>
+      <main className="py-6">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/artikli" element={<ArtikliPage />} />
