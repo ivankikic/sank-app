@@ -9,11 +9,13 @@ import {
   where,
   getDocs,
   addDoc,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { toast } from "react-hot-toast";
 import { Switch } from "@headlessui/react";
 import { format } from "date-fns";
+import { generateExcelReport } from "../utils/excelExport";
 
 const SettingsPage = () => {
   const [settings, setSettings] = useState({
@@ -32,6 +34,7 @@ const SettingsPage = () => {
   const [selectedDateToDelete, setSelectedDateToDelete] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingRecord, setIsDeletingRecord] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -186,6 +189,35 @@ const SettingsPage = () => {
     }
   };
 
+  const handleCreateBackup = async () => {
+    setIsCreatingBackup(true);
+    try {
+      // Dohvati sve datume iz dnevniUnosi kolekcije
+      const datesSnapshot = await getDocs(
+        query(collection(db, "dnevniUnosi"), orderBy("datum"))
+      );
+
+      if (datesSnapshot.empty) {
+        toast.error("Nema podataka za backup");
+        return;
+      }
+
+      // Uzmi prvi i zadnji datum
+      const firstDate = datesSnapshot.docs[0].data().datum;
+      const lastDate =
+        datesSnapshot.docs[datesSnapshot.docs.length - 1].data().datum;
+
+      // Generiraj Excel izvještaj
+      await generateExcelReport(firstDate, lastDate, setIsCreatingBackup);
+      toast.success("Backup je uspješno kreiran!");
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      toast.error("Došlo je do greške prilikom kreiranja backupa");
+    } finally {
+      setIsCreatingBackup(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center items-center h-64">
@@ -285,6 +317,47 @@ const SettingsPage = () => {
               }
               label="Prikaži upozorenja o niskim zalihama"
             />
+
+            {settings.stockAlerts.enabled && (
+              <div className="ml-6 mt-4">
+                <label className="block text-sm text-gray-700 mb-2">
+                  Minimalna količina zaliha
+                </label>
+                <div className="relative w-48 mx-auto">
+                  <input
+                    type="number"
+                    min="0"
+                    value={settings.stockAlerts.minStock}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Dopuštamo privremeno praznu vrijednost ili djelomični unos
+                      if (value === "" || !isNaN(value)) {
+                        handleSettingChange(
+                          "stockAlerts",
+                          "minStock",
+                          value === "" ? 0 : Number(value)
+                        );
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Validiramo vrijednost kad input izgubi fokus
+                      const value = Number(e.target.value);
+                      handleSettingChange(
+                        "stockAlerts",
+                        "minStock",
+                        Math.max(0, value || 0)
+                      );
+                    }}
+                    className="appearance-none w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Upozorenje će se prikazati kada zalihe padnu ispod ove
+                    vrijednosti
+                  </p>
+                </div>
+              </div>
+            )}
           </SettingSection>
 
           <div className="flex justify-end pt-4">
@@ -405,6 +478,82 @@ const SettingsPage = () => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 mt-8">
+        <div className="px-8 py-6 border-b border-gray-200">
+          <div className="flex items-center">
+            <svg
+              className="h-6 w-6 text-indigo-600 mr-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2M8 4v4h8V4M8 4l4 4 4-4"
+              />
+            </svg>
+            <h2 className="text-lg font-medium text-gray-900">
+              Backup podataka
+            </h2>
+          </div>
+          <p className="mt-1 text-sm text-gray-500 text-left">
+            Kreirajte backup svih podataka u Excel formatu. Backup će uključiti
+            sve zapise od prvog do zadnjeg datuma.
+          </p>
+          <div className="mt-4">
+            <button
+              onClick={handleCreateBackup}
+              disabled={isCreatingBackup}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {isCreatingBackup ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Kreiranje backupa...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="mr-2 h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Kreiraj backup
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
