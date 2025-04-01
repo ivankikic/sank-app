@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useCallback } from "react";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -13,6 +13,9 @@ import { hr } from "date-fns/locale";
 import ExportModal from "../components/ExportModal";
 import { toast } from "react-hot-toast";
 import { generateExcelReport } from "../utils/excelExport";
+import { Popover, Transition } from "@headlessui/react";
+import { getDoc, doc } from "firebase/firestore";
+import StockAlerts from "../components/StockAlerts";
 
 const StanjePage = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -23,6 +26,8 @@ const StanjePage = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [settings, setSettings] = useState(null);
 
   // Izračunaj datume za trenutni tjedan
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Počinje od ponedjeljka
@@ -34,26 +39,23 @@ const StanjePage = () => {
   );
 
   useEffect(() => {
-    const fetchArtikli = async () => {
-      const artikliQuery = query(
-        collection(db, "artikli"),
-        orderBy("order", "asc")
-      );
-      const artikliSnapshot = await getDocs(artikliQuery);
-      const artikliData = artikliSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setArtikli(artikliData);
-    };
-    fetchArtikli();
-  }, []);
-
-  useEffect(() => {
-    const fetchWeeklyData = async () => {
+    const loadAllData = async () => {
       setIsLoading(true);
       try {
-        // Dohvati sve unose za trenutni tjedan
+        // 1. Dohvati postavke
+        const settingsDoc = await getDoc(doc(db, "settings", "appSettings"));
+        const settingsData = settingsDoc.exists() ? settingsDoc.data() : null;
+        setSettings(settingsData);
+
+        // 2. Dohvati artikle
+        const artikliSnapshot = await getDocs(collection(db, "artikli"));
+        const artikliData = artikliSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setArtikli(artikliData);
+
+        // 3. Dohvati podatke za tjedan
         const weeklyQ = query(
           collection(db, "dnevniUnosi"),
           where("datum", ">=", weekStart.toISOString().split("T")[0]),
@@ -62,13 +64,13 @@ const StanjePage = () => {
         );
 
         const weeklySnapshot = await getDocs(weeklyQ);
-        const weeklyData = {};
+        const weeklyDataTemp = {};
         weeklySnapshot.docs.forEach((doc) => {
-          weeklyData[doc.data().datum] = doc.data().stavke;
+          weeklyDataTemp[doc.data().datum] = doc.data().stavke;
         });
-        setWeeklyData(weeklyData);
+        setWeeklyData(weeklyDataTemp);
 
-        // Dohvati sve unose do početka trenutnog tjedna
+        // 4. Dohvati prethodno stanje
         const previousQ = query(
           collection(db, "dnevniUnosi"),
           where("datum", "<", weekStart.toISOString().split("T")[0]),
@@ -78,13 +80,7 @@ const StanjePage = () => {
         const previousSnapshot = await getDocs(previousQ);
         const previousState = {};
 
-        // Sortiraj dokumente po datumu da bismo bili sigurni da uzimamo najnovije stanje
-        const sortedDocs = previousSnapshot.docs.sort((a, b) =>
-          a.data().datum.localeCompare(b.data().datum)
-        );
-
-        // Izračunaj stanje za svaki artikl kroz sve prethodne dane
-        sortedDocs.forEach((doc) => {
+        previousSnapshot.docs.forEach((doc) => {
           const stavke = doc.data().stavke;
           stavke.forEach((stavka) => {
             if (!previousState[stavka.artiklId]) {
@@ -93,16 +89,52 @@ const StanjePage = () => {
             previousState[stavka.artiklId] += stavka.ulaz - stavka.izlaz;
           });
         });
-
         setPreviousStanje(previousState);
+
+        // 5. Izračunaj upozorenja o stanju
+        if (settingsData?.stockAlerts?.enabled) {
+          const minStock = settingsData.stockAlerts.minStock || 10;
+
+          // Izračunaj trenutno stanje za svaki artikl
+          const currentStocks = {};
+          artikliData.forEach((artikl) => {
+            let stanje = previousState[artikl.slug] || 0;
+
+            // Dodaj promjene iz trenutnog tjedna
+            weekDays.forEach((date) => {
+              const dayStavke =
+                weeklyDataTemp[date]?.filter(
+                  (s) => s.artiklId === artikl.slug
+                ) || [];
+              const dnevnaPromjena = dayStavke.reduce(
+                (acc, stavka) => acc + (stavka.ulaz || 0) - (stavka.izlaz || 0),
+                0
+              );
+              stanje += dnevnaPromjena;
+            });
+
+            currentStocks[artikl.slug] = stanje;
+          });
+
+          // Filtriraj artikle s niskim stanjem
+          const alerts = artikliData
+            .filter((artikl) => currentStocks[artikl.slug] <= minStock)
+            .map((artikl) => ({
+              ...artikl,
+              currentStock: currentStocks[artikl.slug],
+            }));
+
+          setStockAlerts(alerts);
+        }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error loading data:", error);
+        toast.error("Došlo je do greške pri učitavanju podataka");
       }
       setIsLoading(false);
     };
 
-    fetchWeeklyData();
-  }, [currentWeek]);
+    loadAllData();
+  }, [currentWeek]); // Ovisi samo o trenutnom tjednu
 
   const calculateDailyStanje = (artiklId, date) => {
     const dayStavke =
@@ -178,14 +210,21 @@ const StanjePage = () => {
     setIsExportModalOpen(true);
   };
 
+  if (isLoading) {
+    return <div>Učitavanje...</div>;
+  }
+
   return (
     <div className="max-w-[1350px] mx-auto px-4">
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              Stanje artikala
-            </h1>
+            <div className="flex items-center">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                Stanje artikala
+              </h1>
+              {settings?.stockAlerts?.enabled && <StockAlerts />}
+            </div>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setCurrentWeek((date) => subWeeks(date, 1))}
