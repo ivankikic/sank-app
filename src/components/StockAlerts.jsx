@@ -158,9 +158,6 @@ const StockAlerts = () => {
                                   <span className="font-medium text-gray-900">
                                     {alert.currentStock}
                                   </span>
-                                  <span className="text-gray-500 ml-1">
-                                    (minimum: {alert.minStock})
-                                  </span>
                                 </span>
                               </span>
                             </li>
