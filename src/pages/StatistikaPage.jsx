@@ -7,6 +7,8 @@ import {
   subMonths,
   startOfMonth,
   endOfMonth,
+  addDays,
+  addMonths,
 } from "date-fns";
 import { hr } from "date-fns/locale";
 import { Line, Bar, Pie } from "react-chartjs-2";
@@ -44,6 +46,7 @@ const StatistikaPage = () => {
   const [selectedArtikli, setSelectedArtikli] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("sve"); // "sve", "godina", "6mjeseci", "mjesec", "trenutnaGodina"
+  const [graphGranularity, setGraphGranularity] = useState("day"); // "day", "week", "month"
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,9 +164,8 @@ const StatistikaPage = () => {
 
   // Podaci za linijski graf (kretanje prodaje kroz vrijeme)
   const lineChartData = useMemo(() => {
-    // Prikupimo podatke po mjesecima za odabrane artikle
-    const mjeseciPodaci = {};
-    const mjeseci = [];
+    const podaciPoVremenu = {};
+    const vremenskeOznake = [];
 
     // Pronađi najraniji i najkasniji datum
     let najranijiDatum = new Date();
@@ -175,35 +177,71 @@ const StatistikaPage = () => {
       if (datum > najkasnijiDatum) najkasnijiDatum = datum;
     });
 
-    // Generiraj sve mjesece od najranijeg do najkasnijeg datuma
-    let trenutniMjesec = startOfMonth(najranijiDatum);
-    const krajnjiMjesec = endOfMonth(najkasnijiDatum);
+    // Funkcija za generiranje ključa ovisno o granularnosti
+    const getTimeKey = (datum) => {
+      switch (graphGranularity) {
+        case "day":
+          return format(datum, "yyyy-MM-dd");
+        case "week":
+          return format(datum, "yyyy-'W'ww");
+        case "month":
+        default:
+          return format(datum, "yyyy-MM");
+      }
+    };
 
-    while (trenutniMjesec <= krajnjiMjesec) {
-      const mjesecKljuc = format(trenutniMjesec, "yyyy-MM");
-      mjeseci.push(mjesecKljuc);
-      mjeseciPodaci[mjesecKljuc] = {};
+    // Funkcija za formatiranje labele
+    const formatLabel = (timeKey) => {
+      switch (graphGranularity) {
+        case "day":
+          return format(parseISO(timeKey), "dd.MM.");
+        case "week": {
+          const [year, week] = timeKey.split("-W");
+          return `T${week}/${year.substring(2)}`;
+        }
+        case "month":
+        default: {
+          const [year, month] = timeKey.split("-");
+          return `${month}/${year.substring(2)}`;
+        }
+      }
+    };
 
-      // Inicijaliziraj vrijednost za svaki odabrani artikl
-      selectedArtikli.forEach((artiklId) => {
-        mjeseciPodaci[mjesecKljuc][artiklId] = 0;
-      });
+    // Generiraj sve vremenske oznake
+    let trenutniDatum = najranijiDatum;
+    while (trenutniDatum <= najkasnijiDatum) {
+      const timeKey = getTimeKey(trenutniDatum);
+      if (!vremenskeOznake.includes(timeKey)) {
+        vremenskeOznake.push(timeKey);
+        podaciPoVremenu[timeKey] = {};
+        selectedArtikli.forEach((artiklId) => {
+          podaciPoVremenu[timeKey][artiklId] = 0;
+        });
+      }
 
-      trenutniMjesec = new Date(
-        trenutniMjesec.getFullYear(),
-        trenutniMjesec.getMonth() + 1,
-        1
-      );
+      // Pomakni datum ovisno o granularnosti
+      switch (graphGranularity) {
+        case "day":
+          trenutniDatum = addDays(trenutniDatum, 1);
+          break;
+        case "week":
+          trenutniDatum = addDays(trenutniDatum, 7);
+          break;
+        case "month":
+          trenutniDatum = addMonths(trenutniDatum, 1);
+          break;
+      }
     }
 
     // Popuni podatke
     dnevniUnosi.forEach((unos) => {
-      const mjesec = format(parseISO(unos.datum), "yyyy-MM");
+      const datum = parseISO(unos.datum);
+      const timeKey = getTimeKey(datum);
 
-      if (mjeseciPodaci[mjesec]) {
+      if (podaciPoVremenu[timeKey]) {
         unos.stavke.forEach((stavka) => {
           if (selectedArtikli.includes(stavka.artiklId) && stavka.izlaz) {
-            mjeseciPodaci[mjesec][stavka.artiklId] += stavka.izlaz;
+            podaciPoVremenu[timeKey][stavka.artiklId] += stavka.izlaz;
           }
         });
       }
@@ -222,7 +260,7 @@ const StatistikaPage = () => {
 
       return {
         label: artikIme,
-        data: mjeseci.map((mjesec) => mjeseciPodaci[mjesec][artiklId]),
+        data: vremenskeOznake.map((key) => podaciPoVremenu[key][artiklId]),
         borderColor: colors[index % colors.length].line,
         backgroundColor: colors[index % colors.length].fill,
         tension: 0.4,
@@ -231,13 +269,10 @@ const StatistikaPage = () => {
     });
 
     return {
-      labels: mjeseci.map((mjesec) => {
-        const [godina, mjesecBroj] = mjesec.split("-");
-        return `${mjesecBroj}/${godina.substring(2)}`;
-      }),
+      labels: vremenskeOznake.map(formatLabel),
       datasets,
     };
-  }, [dnevniUnosi, selectedArtikli, artikli]);
+  }, [dnevniUnosi, selectedArtikli, artikli, graphGranularity]);
 
   // Pronađi dan s najviše i najmanje prodaje
   const daniProdaje = useMemo(() => {
@@ -273,6 +308,10 @@ const StatistikaPage = () => {
     const top5 = sortiraniArtikli.slice(0, 5);
     const ostali = sortiraniArtikli.slice(5);
 
+    const ukupnaProdajaSum = Object.values(ukupnaProdaja).reduce(
+      (a, b) => a + b,
+      0
+    );
     const ostaliUkupno = ostali.reduce(
       (acc, artikl) => acc + (ukupnaProdaja[artikl.slug] || 0),
       0
@@ -331,9 +370,7 @@ const StatistikaPage = () => {
     if (selectedArtikli.includes(slug)) {
       setSelectedArtikli(selectedArtikli.filter((id) => id !== slug));
     } else {
-      if (selectedArtikli.length < 4) {
-        setSelectedArtikli([...selectedArtikli, slug]);
-      }
+      setSelectedArtikli([...selectedArtikli, slug]);
     }
   };
 
@@ -563,12 +600,26 @@ const StatistikaPage = () => {
             </h2>
             <div className="h-80 flex justify-center">
               <Pie
+                key="pie-chart"
                 data={pieChartData}
                 options={{
                   maintainAspectRatio: false,
                   plugins: {
                     legend: {
                       position: "right",
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => {
+                          const value = context.raw;
+                          const total = context.dataset.data.reduce(
+                            (a, b) => a + b,
+                            0
+                          );
+                          const percentage = ((value / total) * 100).toFixed(1);
+                          return `${context.label}: ${value} (${percentage}%)`;
+                        },
+                      },
                     },
                   },
                 }}
@@ -577,40 +628,38 @@ const StatistikaPage = () => {
           </div>
         </div>
 
-        {/* Linijski graf kretanja prodaje s odabirom artikala */}
+        {/* Linijski graf kretanja prodaje */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-bold text-gray-700">
               Kretanje prodaje kroz vrijeme
             </h2>
-            <div className="flex flex-wrap gap-3">
-              {artikli.slice(0, 10).map((artikl) => (
-                <label key={artikl.id} className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    className="form-checkbox h-4 w-4 text-indigo-600"
-                    checked={selectedArtikli.includes(artikl.slug)}
-                    onChange={() => handleArtiklCheck(artikl.slug)}
-                    disabled={
-                      !selectedArtikli.includes(artikl.slug) &&
-                      selectedArtikli.length >= 4
-                    }
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    {artikl.name}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <select
+              value={graphGranularity}
+              onChange={(e) => setGraphGranularity(e.target.value)}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="day">Po danu</option>
+              <option value="week">Po tjednu</option>
+              <option value="month">Po mjesecu</option>
+            </select>
           </div>
+
           <div className="h-80">
             <Line
+              key="line-chart"
               data={lineChartData}
               options={{
                 maintainAspectRatio: false,
                 scales: {
                   y: {
                     beginAtZero: true,
+                  },
+                  x: {
+                    ticks: {
+                      maxRotation: 45,
+                      minRotation: 45,
+                    },
                   },
                 },
                 plugins: {
@@ -624,6 +673,28 @@ const StatistikaPage = () => {
                 },
               }}
             />
+          </div>
+
+          {/* Checkboxovi za odabir artikala premješteni ispod grafa */}
+          <div className="mt-6 border-t pt-4">
+            <div className="text-sm font-medium text-gray-700 mb-3">
+              Odaberi artikle za prikaz:
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {artikli.map((artikl) => (
+                <label key={artikl.id} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-4 w-4 text-indigo-600"
+                    checked={selectedArtikli.includes(artikl.slug)}
+                    onChange={() => handleArtiklCheck(artikl.slug)}
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {artikl.name}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
       </div>
