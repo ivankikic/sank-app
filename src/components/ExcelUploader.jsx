@@ -11,6 +11,8 @@ import {
 import { db } from "../firebase";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
+import { GOOGLE_DRIVE_CONFIG } from "../config/google-drive-config";
+import { GoogleLogin } from "@react-oauth/google";
 
 const DuplicatesModal = ({ duplicates, onConfirm, onCancel }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -104,6 +106,10 @@ const ExcelUploader = ({ onLogAdded }) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [pendingData, setPendingData] = useState(null);
   const [duplicatesData, setDuplicatesData] = useState(null);
+  const [gapiReady, setGapiReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [driveFolder, setDriveFolder] = useState(null);
+  const [lastUploadedFile, setLastUploadedFile] = useState(null);
 
   useEffect(() => {
     const fetchArtikli = async () => {
@@ -120,6 +126,35 @@ const ExcelUploader = ({ onLogAdded }) => {
     };
     fetchArtikli();
   }, []);
+
+  useEffect(() => {
+    // Učitaj Google API
+    const loadGoogleAPI = () => {
+      const script = document.createElement("script");
+      script.src = "https://apis.google.com/js/api.js";
+      script.onload = initializeGoogleAPI;
+      document.body.appendChild(script);
+    };
+
+    loadGoogleAPI();
+  }, []);
+
+  const initializeGoogleAPI = () => {
+    window.gapi.load("client:auth2", async () => {
+      try {
+        await window.gapi.client.init({
+          apiKey: GOOGLE_DRIVE_CONFIG.apiKey,
+          clientId: GOOGLE_DRIVE_CONFIG.clientId,
+          scope: GOOGLE_DRIVE_CONFIG.scope,
+          discoveryDocs: GOOGLE_DRIVE_CONFIG.discoveryDocs,
+        });
+        setGapiReady(true);
+      } catch (error) {
+        console.error("Error initializing Google API:", error);
+        toast.error("Greška pri inicijalizaciji Google API-ja");
+      }
+    });
+  };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -254,57 +289,151 @@ const ExcelUploader = ({ onLogAdded }) => {
     setSelectedFile(null);
   };
 
+  const getAppFolder = async () => {
+    try {
+      // Prvo provjeri postoji li već folder
+      const folderName = "Joke Inventura";
+      const response = await window.gapi.client.drive.files.list({
+        q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: "files(id, name)",
+      });
+
+      if (response.result.files.length > 0) {
+        // Folder već postoji
+        return response.result.files[0];
+      } else {
+        // Kreiraj novi folder
+        const folderMetadata = {
+          name: folderName,
+          mimeType: "application/vnd.google-apps.folder",
+        };
+
+        const folder = await window.gapi.client.drive.files.create({
+          resource: folderMetadata,
+          fields: "id, name, webViewLink",
+        });
+
+        return folder.result;
+      }
+    } catch (error) {
+      console.error("Error with app folder:", error);
+      throw error;
+    }
+  };
+
+  const uploadToDrive = async (file) => {
+    try {
+      // Dohvati ili kreiraj folder
+      const folder = await getAppFolder();
+      setDriveFolder(folder);
+
+      const timestamp = new Date().getTime();
+      const fileName = `${selectedDate}-${timestamp}.xlsx`;
+
+      // Kreiraj metadata za file
+      const fileMetadata = {
+        name: fileName,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        parents: [folder.id], // Spremi u naš folder
+      };
+
+      // Pretvori file u base64
+      const base64Data = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result.split(",")[1]);
+        reader.readAsDataURL(file);
+      });
+
+      // Upload na Google Drive
+      const response = await window.gapi.client.drive.files.create({
+        resource: fileMetadata,
+        media: {
+          mimeType:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          body: base64Data,
+        },
+        fields: "id, name, webViewLink, parents",
+      });
+
+      // Spremi informacije o uploadanom fajlu
+      setLastUploadedFile(response.result);
+
+      toast.success("Datoteka uspješno spremljena na Google Drive");
+      return response.result;
+    } catch (error) {
+      console.error("Error uploading to Drive:", error);
+      toast.error("Greška pri spremanju na Google Drive");
+      throw error;
+    }
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
       toast.error("Molimo prvo odaberite Excel datoteku");
       return;
     }
 
+    if (!isAuthenticated) {
+      toast.error("Molimo prvo se prijavite na Google račun");
+      return;
+    }
+
     setStatus("Učitavam Excel datoteku...");
     const loadingToast = toast.loading("Učitavam Excel...");
 
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: "array" });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
+    try {
+      // Prvo spremi na Google Drive
+      await uploadToDrive(selectedFile);
 
-        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        const rows = data.slice(1);
+      // Nastavi s postojećom logikom obrade...
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const bstr = evt.target.result;
+          const wb = XLSX.read(bstr, { type: "array" });
+          const wsname = wb.SheetNames[0];
+          const ws = wb.Sheets[wsname];
 
-        const nepoznatiArtikli = rows
-          .map((row) => row[0]?.trim().toLowerCase().replaceAll(" ", "-"))
-          .filter(
-            (artiklId) =>
-              !validArtikli.some((artikl) => artikl.slug === artiklId)
-          );
+          const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          const rows = data.slice(1);
 
-        if (nepoznatiArtikli.length > 0) {
-          toast.error(`Nepoznati artikli: ${nepoznatiArtikli.join(", ")}`);
-          setStatus("");
-          setIsLoading(false);
-          return;
+          const nepoznatiArtikli = rows
+            .map((row) => row[0]?.trim().toLowerCase().replaceAll(" ", "-"))
+            .filter(
+              (artiklId) =>
+                !validArtikli.some((artikl) => artikl.slug === artiklId)
+            );
+
+          if (nepoznatiArtikli.length > 0) {
+            toast.error(`Nepoznati artikli: ${nepoznatiArtikli.join(", ")}`);
+            setStatus("");
+            setIsLoading(false);
+            return;
+          }
+
+          await processExcelData(data, rows);
+          toast.dismiss(loadingToast);
+        } catch (err) {
+          console.error(err);
+          toast.error("Greška prilikom obrade Excel datoteke");
+          toast.dismiss(loadingToast);
+          setStatus("Došlo je do greške prilikom obrade datoteke.");
         }
+      };
 
-        await processExcelData(data, rows);
+      reader.onerror = () => {
+        toast.error("Greška prilikom čitanja datoteke");
         toast.dismiss(loadingToast);
-      } catch (err) {
-        console.error(err);
-        toast.error("Greška prilikom obrade Excel datoteke");
-        toast.dismiss(loadingToast);
-        setStatus("Došlo je do greške prilikom obrade datoteke.");
-      }
-    };
+        setStatus("Greška prilikom čitanja datoteke.");
+      };
 
-    reader.onerror = () => {
-      toast.error("Greška prilikom čitanja datoteke");
+      reader.readAsArrayBuffer(selectedFile);
+    } catch (error) {
+      console.error("Error in upload process:", error);
+      toast.error("Greška prilikom uploada");
       toast.dismiss(loadingToast);
-      setStatus("Greška prilikom čitanja datoteke.");
-    };
-
-    reader.readAsArrayBuffer(selectedFile);
+    }
   };
 
   const handleDuplicatesConfirm = async () => {
@@ -452,6 +581,56 @@ const ExcelUploader = ({ onLogAdded }) => {
             <p className="text-sm">{status}</p>
           </div>
         )}
+
+        {/* Prikaz informacija o spremljenom fajlu */}
+        {lastUploadedFile && (
+          <div className="mt-4 p-4 bg-green-50 rounded-lg">
+            <h3 className="text-sm font-medium text-green-800">
+              Uspješno spremljeno!
+            </h3>
+            <div className="mt-2 text-sm text-green-700">
+              <p>Lokacija: Joke Inventura folder na Google Drive-u</p>
+              <p className="mt-1">Naziv datoteke: {lastUploadedFile.name}</p>
+              <a
+                href={lastUploadedFile.webViewLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center text-sm text-green-700 hover:text-green-900"
+              >
+                <svg
+                  className="mr-1 h-4 w-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                </svg>
+                Otvori na Google Drive-u
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Link do foldera */}
+        {driveFolder && (
+          <div className="mt-4">
+            <a
+              href={driveFolder.webViewLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+            >
+              <svg
+                className="mr-1 h-4 w-4"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+              </svg>
+              Otvori folder na Google Drive-u
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Duplicates Modal */}
@@ -493,6 +672,23 @@ const ExcelUploader = ({ onLogAdded }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Dodaj Google prijavu */}
+      {gapiReady && !isAuthenticated && (
+        <div className="mt-4">
+          <GoogleLogin
+            clientId={GOOGLE_DRIVE_CONFIG.clientId}
+            onSuccess={(response) => {
+              setIsAuthenticated(true);
+              toast.success("Uspješna prijava na Google račun");
+            }}
+            onError={() => {
+              toast.error("Greška pri prijavi na Google račun");
+            }}
+            cookiePolicy={"single_host_origin"}
+          />
         </div>
       )}
     </div>
