@@ -252,21 +252,21 @@ const StanjePage = () => {
           )}
 
           <div
-            className="overflow-x-auto border-t border-gray-200"
+            className="overflow-auto border-t border-gray-200 max-h-[70vh]"
             style={{ maxWidth: "100%" }}
           >
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 relative">
               <thead>
-                <tr className="bg-gray-50">
+                <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 z-20 bg-gray-50 border-r border-gray-200 min-w-[200px]"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky top-0 left-0 z-30 bg-gray-50 border-r border-gray-200 min-w-[200px]"
                   >
                     Artikl
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 min-w-[120px]"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider sticky top-0 left-[200px] z-30 bg-gray-50 border-r border-gray-200 min-w-[120px]"
                   >
                     Početno stanje
                   </th>
@@ -274,7 +274,7 @@ const StanjePage = () => {
                     <th
                       key={date}
                       scope="col"
-                      className="border-r border-gray-200 bg-gray-50"
+                      className="border-r border-gray-200 bg-gray-50 sticky top-0 z-20"
                       colSpan={3}
                     >
                       <div className="px-4 py-3 text-center">
@@ -288,18 +288,18 @@ const StanjePage = () => {
                     </th>
                   ))}
                 </tr>
-                <tr className="bg-gray-50 border-t border-gray-200">
-                  <th className="sticky left-0 z-20 bg-gray-50 border-r border-gray-200"></th>
-                  <th className="border-r border-gray-200"></th>
+                <tr>
+                  <th className="sticky top-[48px] left-0 z-30 bg-gray-50 border-r border-gray-200 py-2"></th>
+                  <th className="sticky top-[48px] left-[200px] z-30 bg-gray-50 border-r border-gray-200 py-2"></th>
                   {weekDays.map((date, idx) => (
                     <Fragment key={`subheader-${date}`}>
-                      <th className="px-4 py-2 text-xs font-medium text-gray-500 text-center border-r border-gray-200 min-w-[80px]">
+                      <th className="px-4 py-2 text-xs font-medium text-gray-500 text-center border-r border-gray-200 min-w-[80px] sticky top-[48px] z-20 bg-gray-50">
                         Ulaz
                       </th>
-                      <th className="px-4 py-2 text-xs font-medium text-gray-500 text-center border-r border-gray-200 min-w-[80px]">
+                      <th className="px-4 py-2 text-xs font-medium text-gray-500 text-center border-r border-gray-200 min-w-[80px] sticky top-[48px] z-20 bg-gray-50">
                         Izlaz
                       </th>
-                      <th className="px-4 py-2 text-xs font-medium text-gray-500 text-center border-r border-gray-200 min-w-[80px]">
+                      <th className="px-4 py-2 text-xs font-medium text-gray-500 text-center border-r border-gray-200 min-w-[80px] sticky top-[48px] z-20 bg-gray-50">
                         Stanje
                       </th>
                     </Fragment>
@@ -309,10 +309,13 @@ const StanjePage = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {artikli.map((artikl, index) => (
                   <tr key={artikl.id} className="group hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 z-20 bg-white border-r border-gray-200 group-hover:bg-gray-50 min-w-[200px] text-left">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 z-10 bg-white border-r border-gray-200 group-hover:bg-gray-50 min-w-[200px] text-left">
+                      <span className="text-gray-400 text-xs mr-2">
+                        {index + 1}.
+                      </span>
                       {artikl.name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center border-r border-gray-200 font-medium min-w-[120px]">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center border-r border-gray-200 font-medium min-w-[120px] sticky left-[200px] z-10 bg-white group-hover:bg-gray-50">
                       {previousStanje[artikl.slug] || 0}
                     </td>
                     {weekDays.map((date, idx) => {
@@ -321,17 +324,21 @@ const StanjePage = () => {
                       return (
                         <Fragment key={`${artikl.id}-${date}`}>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200 min-w-[80px]">
-                            {dailyData.ulaz > 0 && (
+                            {dailyData.ulaz > 0 ? (
                               <span className="text-green-600 font-medium">
                                 +{dailyData.ulaz}
                               </span>
+                            ) : (
+                              <span className="text-gray-400">0</span>
                             )}
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200 min-w-[80px]">
-                            {dailyData.izlaz > 0 && (
+                            {dailyData.izlaz > 0 ? (
                               <span className="text-red-600 font-medium">
                                 -{dailyData.izlaz}
                               </span>
+                            ) : (
+                              <span className="text-gray-400">0</span>
                             )}
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200 font-medium min-w-[80px]">

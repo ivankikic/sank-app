@@ -329,7 +329,7 @@ function ArtikliPage() {
             <div className="bg-white rounded-lg shadow-xl w-[500px] max-w-lg">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Dodaj Nove Artikle
+                  Dodaj nove artikle
                 </h2>
               </div>
               <div className="p-6">
@@ -358,29 +358,34 @@ function ArtikliPage() {
           </div>
         )}
 
-        {/* Update Delete and Edit modals with similar styling */}
+        {/* Delete Modal - novi stil */}
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-lg w-96">
-              <h2 className="text-xl font-bold mb-4">Potvrda brisanja</h2>
-              <p className="mb-4">
-                Jeste li sigurni da želite obrisati artikl "
-                {selectedArtikl?.name}
-                "?
-              </p>
-              <div className="flex justify-end gap-2">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-xl w-[500px] max-w-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Potvrda brisanja
+                </h2>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-700 text-left">
+                  Jeste li sigurni da želite obrisati artikl "
+                  <span className="font-medium">{selectedArtikl?.name}</span>"?
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
                 <button
                   onClick={() => {
                     setIsDeleteModalOpen(false);
                     setSelectedArtikl(null);
                   }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   Odustani
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   Obriši
                 </button>
@@ -389,31 +394,41 @@ function ArtikliPage() {
           </div>
         )}
 
+        {/* Edit Modal - novi stil */}
         {isEditModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-lg w-96">
-              <h2 className="text-xl font-bold mb-4">Uredi artikl</h2>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full p-2 border rounded mb-4"
-                placeholder="Naziv artikla"
-              />
-              <div className="flex justify-end gap-2">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-xl w-[500px] max-w-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Uredi artikl
+                </h2>
+              </div>
+              <div className="p-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                  Naziv artikla
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Naziv artikla"
+                />
+              </div>
+              <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
                 <button
                   onClick={() => {
                     setIsEditModalOpen(false);
                     setSelectedArtikl(null);
                     setEditName("");
                   }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   Odustani
                 </button>
                 <button
                   onClick={handleEdit}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Spremi
                 </button>
