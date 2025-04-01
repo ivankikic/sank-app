@@ -211,10 +211,6 @@ const StanjePage = () => {
     setIsExportModalOpen(true);
   };
 
-  if (isLoading) {
-    return <div>Učitavanje...</div>;
-  }
-
   return (
     <div className="max-w-[1350px] mx-auto px-4">
       <div className="bg-white rounded-lg shadow">
@@ -230,6 +226,7 @@ const StanjePage = () => {
               <button
                 onClick={() => setCurrentWeek((date) => subWeeks(date, 1))}
                 className="p-2 text-gray-600 hover:text-gray-900"
+                disabled={isLoading}
               >
                 <svg
                   className="w-5 h-5"
@@ -252,6 +249,7 @@ const StanjePage = () => {
               <button
                 onClick={() => setCurrentWeek((date) => addWeeks(date, 1))}
                 className="p-2 text-gray-600 hover:text-gray-900"
+                disabled={isLoading}
               >
                 <svg
                   className="w-5 h-5"
@@ -270,6 +268,7 @@ const StanjePage = () => {
               <button
                 onClick={handleOpenExportModal}
                 className="ml-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+                disabled={isLoading}
               >
                 <svg
                   className="w-4 h-4"
