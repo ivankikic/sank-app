@@ -5,6 +5,7 @@ const LockScreen = ({ onUnlock }) => {
   const [error, setError] = useState(false);
 
   const handleSubmit = (e) => {
+    console.log(import.meta.env.VITE_ACCESS_CODE);
     e.preventDefault();
     if (code === import.meta.env.VITE_ACCESS_CODE) {
       localStorage.setItem("app_unlocked", "true");
