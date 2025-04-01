@@ -10,7 +10,10 @@ const Header = ({ onLock }) => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <p className="h-8 w-auto select-none">
-                <span className="text-xl font-bold"> Invero</span>
+                <span className="text-xl font-bold">
+                  {" "}
+                  Invero<span className="text-[#4F46E5]">.</span>
+                </span>
               </p>
             </div>
             <div className="flex space-x-8 ml-10">
