@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import ArtikliPage from "./pages/ArtikliPage";
 import StanjePage from "./pages/StanjePage";
+import StatistikaPage from "./pages/StatistikaPage";
 import "./App.css";
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/artikli" element={<ArtikliPage />} />
           <Route path="/stanje" element={<StanjePage />} />
+          <Route path="/statistika" element={<StatistikaPage />} />
         </Routes>
       </main>
     </div>

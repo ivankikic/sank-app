@@ -21,8 +21,8 @@ const StanjePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [previousStanje, setPreviousStanje] = useState({});
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Izračunaj datume za trenutni tjedan
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Počinje od ponedjeljka
@@ -167,6 +167,17 @@ const StanjePage = () => {
     }
   };
 
+  // Modificiraj funkciju koja otvara modal
+  const handleOpenExportModal = () => {
+    // Formatiraj datume u YYYY-MM-DD format koji input[type="date"] očekuje
+    const formattedStartDate = format(weekStart, "yyyy-MM-dd");
+    const formattedEndDate = format(weekEnd, "yyyy-MM-dd");
+
+    setStartDate(formattedStartDate);
+    setEndDate(formattedEndDate);
+    setIsExportModalOpen(true);
+  };
+
   return (
     <div className="max-w-[1350px] mx-auto px-4">
       <div className="bg-white rounded-lg shadow">
@@ -217,7 +228,7 @@ const StanjePage = () => {
                 </svg>
               </button>
               <button
-                onClick={() => setIsExportModalOpen(true)}
+                onClick={handleOpenExportModal}
                 className="ml-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 flex items-center gap-2"
               >
                 <svg

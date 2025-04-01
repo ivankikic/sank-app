@@ -1,0 +1,634 @@
+import { useState, useEffect, useMemo } from "react";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { db } from "../firebase";
+import {
+  format,
+  parseISO,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+} from "date-fns";
+import { hr } from "date-fns/locale";
+import { Line, Bar, Pie } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+
+// Registriranje svih potrebnih komponenti Chart.js-a
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+const StatistikaPage = () => {
+  const [artikli, setArtikli] = useState([]);
+  const [dnevniUnosi, setDnevniUnosi] = useState([]);
+  const [selectedArtikli, setSelectedArtikli] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState("sve"); // "sve", "godina", "6mjeseci", "mjesec", "trenutnaGodina"
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Dohvati artikle
+        const artikliQuery = query(
+          collection(db, "artikli"),
+          orderBy("order", "asc")
+        );
+        const artikliSnapshot = await getDocs(artikliQuery);
+        const artikliData = artikliSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setArtikli(artikliData);
+
+        // Dohvati sve dnevne unose
+        let unosiQuery;
+        const today = new Date();
+
+        if (timeRange === "trenutnaGodina") {
+          const startOfYear = new Date(today.getFullYear(), 0, 1); // 1. siječnja tekuće godine
+          unosiQuery = query(
+            collection(db, "dnevniUnosi"),
+            where("datum", ">=", format(startOfYear, "yyyy-MM-dd")),
+            orderBy("datum")
+          );
+        } else if (timeRange === "godina") {
+          const lastYear = subMonths(today, 12);
+          unosiQuery = query(
+            collection(db, "dnevniUnosi"),
+            where("datum", ">=", format(lastYear, "yyyy-MM-dd")),
+            orderBy("datum")
+          );
+        } else if (timeRange === "6mjeseci") {
+          const lastSixMonths = subMonths(today, 6);
+          unosiQuery = query(
+            collection(db, "dnevniUnosi"),
+            where("datum", ">=", format(lastSixMonths, "yyyy-MM-dd")),
+            orderBy("datum")
+          );
+        } else if (timeRange === "mjesec") {
+          const lastMonth = subMonths(today, 1);
+          unosiQuery = query(
+            collection(db, "dnevniUnosi"),
+            where("datum", ">=", format(lastMonth, "yyyy-MM-dd")),
+            orderBy("datum")
+          );
+        } else {
+          // Za "sve"
+          unosiQuery = query(collection(db, "dnevniUnosi"), orderBy("datum"));
+        }
+
+        const unosiSnapshot = await getDocs(unosiQuery);
+        const unosiData = unosiSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setDnevniUnosi(unosiData);
+
+        // Postavi početna 3 artikla za praćenje ako nisu već postavljeni
+        if (selectedArtikli.length === 0 && artikliData.length > 0) {
+          setSelectedArtikli(artikliData.slice(0, 3).map((a) => a.slug));
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [timeRange]);
+
+  // Izračunaj ukupni izlaz (prodaju) po artiklu
+  const ukupnaProdaja = useMemo(() => {
+    const prodaja = {};
+    dnevniUnosi.forEach((unos) => {
+      unos.stavke.forEach((stavka) => {
+        if (stavka.izlaz) {
+          if (!prodaja[stavka.artiklId]) {
+            prodaja[stavka.artiklId] = 0;
+          }
+          prodaja[stavka.artiklId] += stavka.izlaz;
+        }
+      });
+    });
+    return prodaja;
+  }, [dnevniUnosi]);
+
+  // Sortiraj artikle po prodaji za "Top prodaja" i "Najmanja prodaja"
+  const sortiraniArtikli = useMemo(() => {
+    return artikli
+      .filter((artikl) => ukupnaProdaja[artikl.slug] !== undefined)
+      .sort(
+        (a, b) => (ukupnaProdaja[b.slug] || 0) - (ukupnaProdaja[a.slug] || 0)
+      );
+  }, [artikli, ukupnaProdaja]);
+
+  // Izračunaj ukupni ulaz po artiklu
+  const ukupniUlaz = useMemo(() => {
+    const ulaz = {};
+    dnevniUnosi.forEach((unos) => {
+      unos.stavke.forEach((stavka) => {
+        if (stavka.ulaz) {
+          if (!ulaz[stavka.artiklId]) {
+            ulaz[stavka.artiklId] = 0;
+          }
+          ulaz[stavka.artiklId] += stavka.ulaz;
+        }
+      });
+    });
+    return ulaz;
+  }, [dnevniUnosi]);
+
+  // Podaci za linijski graf (kretanje prodaje kroz vrijeme)
+  const lineChartData = useMemo(() => {
+    // Prikupimo podatke po mjesecima za odabrane artikle
+    const mjeseciPodaci = {};
+    const mjeseci = [];
+
+    // Pronađi najraniji i najkasniji datum
+    let najranijiDatum = new Date();
+    let najkasnijiDatum = new Date(0);
+
+    dnevniUnosi.forEach((unos) => {
+      const datum = parseISO(unos.datum);
+      if (datum < najranijiDatum) najranijiDatum = datum;
+      if (datum > najkasnijiDatum) najkasnijiDatum = datum;
+    });
+
+    // Generiraj sve mjesece od najranijeg do najkasnijeg datuma
+    let trenutniMjesec = startOfMonth(najranijiDatum);
+    const krajnjiMjesec = endOfMonth(najkasnijiDatum);
+
+    while (trenutniMjesec <= krajnjiMjesec) {
+      const mjesecKljuc = format(trenutniMjesec, "yyyy-MM");
+      mjeseci.push(mjesecKljuc);
+      mjeseciPodaci[mjesecKljuc] = {};
+
+      // Inicijaliziraj vrijednost za svaki odabrani artikl
+      selectedArtikli.forEach((artiklId) => {
+        mjeseciPodaci[mjesecKljuc][artiklId] = 0;
+      });
+
+      trenutniMjesec = new Date(
+        trenutniMjesec.getFullYear(),
+        trenutniMjesec.getMonth() + 1,
+        1
+      );
+    }
+
+    // Popuni podatke
+    dnevniUnosi.forEach((unos) => {
+      const mjesec = format(parseISO(unos.datum), "yyyy-MM");
+
+      if (mjeseciPodaci[mjesec]) {
+        unos.stavke.forEach((stavka) => {
+          if (selectedArtikli.includes(stavka.artiklId) && stavka.izlaz) {
+            mjeseciPodaci[mjesec][stavka.artiklId] += stavka.izlaz;
+          }
+        });
+      }
+    });
+
+    const datasets = selectedArtikli.map((artiklId, index) => {
+      const artikl = artikli.find((a) => a.slug === artiklId);
+      const artikIme = artikl ? artikl.name : artiklId;
+
+      const colors = [
+        { line: "rgba(75, 192, 192, 1)", fill: "rgba(75, 192, 192, 0.2)" },
+        { line: "rgba(153, 102, 255, 1)", fill: "rgba(153, 102, 255, 0.2)" },
+        { line: "rgba(255, 159, 64, 1)", fill: "rgba(255, 159, 64, 0.2)" },
+        { line: "rgba(54, 162, 235, 1)", fill: "rgba(54, 162, 235, 0.2)" },
+      ];
+
+      return {
+        label: artikIme,
+        data: mjeseci.map((mjesec) => mjeseciPodaci[mjesec][artiklId]),
+        borderColor: colors[index % colors.length].line,
+        backgroundColor: colors[index % colors.length].fill,
+        tension: 0.4,
+        fill: true,
+      };
+    });
+
+    return {
+      labels: mjeseci.map((mjesec) => {
+        const [godina, mjesecBroj] = mjesec.split("-");
+        return `${mjesecBroj}/${godina.substring(2)}`;
+      }),
+      datasets,
+    };
+  }, [dnevniUnosi, selectedArtikli, artikli]);
+
+  // Pronađi dan s najviše i najmanje prodaje
+  const daniProdaje = useMemo(() => {
+    const dnevnaProdaja = {};
+
+    dnevniUnosi.forEach((unos) => {
+      let ukupnoIzlaz = 0;
+      unos.stavke.forEach((stavka) => {
+        if (stavka.izlaz) {
+          ukupnoIzlaz += stavka.izlaz;
+        }
+      });
+      dnevnaProdaja[unos.datum] = ukupnoIzlaz;
+    });
+
+    let najviseProdan = { datum: "", kolicina: 0 };
+    let najmanjeProdan = { datum: "", kolicina: Infinity };
+
+    Object.entries(dnevnaProdaja).forEach(([datum, kolicina]) => {
+      if (kolicina > najviseProdan.kolicina) {
+        najviseProdan = { datum, kolicina };
+      }
+      if (kolicina < najmanjeProdan.kolicina && kolicina > 0) {
+        najmanjeProdan = { datum, kolicina };
+      }
+    });
+
+    return { najviseProdan, najmanjeProdan };
+  }, [dnevniUnosi]);
+
+  // Podaci za pie chart (udio prodaje po artiklima)
+  const pieChartData = useMemo(() => {
+    const top5 = sortiraniArtikli.slice(0, 5);
+    const ostali = sortiraniArtikli.slice(5);
+
+    const ostaliUkupno = ostali.reduce(
+      (acc, artikl) => acc + (ukupnaProdaja[artikl.slug] || 0),
+      0
+    );
+
+    const labels = [...top5.map((a) => a.name), "Ostali"];
+    const data = [...top5.map((a) => ukupnaProdaja[a.slug] || 0), ostaliUkupno];
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: [
+            "rgba(255, 99, 132, 0.8)",
+            "rgba(54, 162, 235, 0.8)",
+            "rgba(255, 206, 86, 0.8)",
+            "rgba(75, 192, 192, 0.8)",
+            "rgba(153, 102, 255, 0.8)",
+            "rgba(200, 200, 200, 0.8)",
+          ],
+          borderColor: [
+            "rgba(255, 99, 132, 1)",
+            "rgba(54, 162, 235, 1)",
+            "rgba(255, 206, 86, 1)",
+            "rgba(75, 192, 192, 1)",
+            "rgba(153, 102, 255, 1)",
+            "rgba(200, 200, 200, 1)",
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [sortiraniArtikli, ukupnaProdaja]);
+
+  const barChartData = useMemo(() => {
+    // Prikazujemo top 10 artikala
+    const top10 = sortiraniArtikli.slice(0, 10);
+
+    return {
+      labels: top10.map((a) => a.name),
+      datasets: [
+        {
+          label: "Ukupna prodaja",
+          data: top10.map((a) => ukupnaProdaja[a.slug] || 0),
+          backgroundColor: "rgba(54, 162, 235, 0.6)",
+          borderColor: "rgba(54, 162, 235, 1)",
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [sortiraniArtikli, ukupnaProdaja]);
+
+  // Funkcija za promjenu odabranih artikala
+  const handleArtiklCheck = (slug) => {
+    if (selectedArtikli.includes(slug)) {
+      setSelectedArtikli(selectedArtikli.filter((id) => id !== slug));
+    } else {
+      if (selectedArtikli.length < 4) {
+        setSelectedArtikli([...selectedArtikli, slug]);
+      }
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-[1350px] mx-auto px-4 flex justify-center items-center h-64">
+        <div className="flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+          <span className="text-sm text-gray-600 font-medium">
+            Učitavam podatke...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-[1350px] mx-auto px-4">
+      <div className="flex flex-col gap-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold text-gray-900">Statistika</h1>
+          <div className="flex gap-2">
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="sve">Svi podaci</option>
+              <option value="trenutnaGodina">
+                {new Date().getFullYear()}. godina
+              </option>
+              <option value="godina">Zadnjih godinu dana</option>
+              <option value="6mjeseci">Zadnjih 6 mjeseci</option>
+              <option value="mjesec">Zadnjih mjesec dana</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Top informacije u karticama */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xs uppercase font-bold text-gray-500 mb-1">
+              Ukupno artikala
+            </h2>
+            <p className="text-2xl font-bold">{artikli.length}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xs uppercase font-bold text-gray-500 mb-1">
+              Ukupno dnevnih unosa
+            </h2>
+            <p className="text-2xl font-bold">{dnevniUnosi.length}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xs uppercase font-bold text-gray-500 mb-1">
+              Ukupno prodano
+            </h2>
+            <p className="text-2xl font-bold">
+              {Object.values(ukupnaProdaja).reduce((a, b) => a + b, 0)}
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xs uppercase font-bold text-gray-500 mb-1">
+              Ukupno zaprimljeno
+            </h2>
+            <p className="text-2xl font-bold">
+              {Object.values(ukupniUlaz).reduce((a, b) => a + b, 0)}
+            </p>
+          </div>
+        </div>
+
+        {/* Dan s najviše i najmanje prodaje */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-sm font-bold text-gray-700 mb-4">
+              Dan s najviše prodaje
+            </h2>
+            {daniProdaje.najviseProdan.datum ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500">Datum</p>
+                  <p className="text-lg font-semibold">
+                    {format(
+                      parseISO(daniProdaje.najviseProdan.datum),
+                      "d. MMMM yyyy.",
+                      { locale: hr }
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Količina</p>
+                  <p className="text-lg font-semibold text-right">
+                    {daniProdaje.najviseProdan.kolicina}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">Nema podataka</p>
+            )}
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-sm font-bold text-gray-700 mb-4">
+              Dan s najmanje prodaje
+            </h2>
+            {daniProdaje.najmanjeProdan.datum ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500">Datum</p>
+                  <p className="text-lg font-semibold">
+                    {format(
+                      parseISO(daniProdaje.najmanjeProdan.datum),
+                      "d. MMMM yyyy.",
+                      { locale: hr }
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Količina</p>
+                  <p className="text-lg font-semibold text-right">
+                    {daniProdaje.najmanjeProdan.kolicina}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">Nema podataka</p>
+            )}
+          </div>
+        </div>
+
+        {/* Top 5 i najmanje traženi artikli */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-sm font-bold text-gray-700 mb-4">
+              Najprodavaniji artikli
+            </h2>
+            <ul className="space-y-2">
+              {sortiraniArtikli.slice(0, 5).map((artikl, index) => (
+                <li
+                  key={artikl.id}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center">
+                    <span className="text-gray-400 text-xs mr-2">
+                      {index + 1}.
+                    </span>
+                    <span>{artikl.name}</span>
+                  </div>
+                  <span className="font-medium text-indigo-600">
+                    {ukupnaProdaja[artikl.slug] || 0}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-sm font-bold text-gray-700 mb-4">
+              Najmanje prodavani artikli
+            </h2>
+            <ul className="space-y-2">
+              {sortiraniArtikli
+                .slice(-5)
+                .reverse()
+                .map((artikl, index) => (
+                  <li
+                    key={artikl.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center">
+                      <span className="text-gray-400 text-xs mr-2">
+                        {index + 1}.
+                      </span>
+                      <span>{artikl.name}</span>
+                    </div>
+                    <span className="font-medium text-indigo-600">
+                      {ukupnaProdaja[artikl.slug] || 0}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Grafovi */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Bar chart */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-sm font-bold text-gray-700 mb-4">
+              Top 10 najprodavanijih artikala
+            </h2>
+            <div className="h-80">
+              <Bar
+                data={barChartData}
+                options={{
+                  maintainAspectRatio: false,
+                  indexAxis: "y",
+                  scales: {
+                    y: {
+                      ticks: {
+                        callback: function (value) {
+                          // Skrati imena ako su preduga
+                          const label = this.getLabelForValue(value);
+                          return label.length > 20
+                            ? label.substr(0, 18) + "..."
+                            : label;
+                        },
+                      },
+                    },
+                  },
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Pie chart */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-sm font-bold text-gray-700 mb-4">
+              Udio prodaje po artiklima
+            </h2>
+            <div className="h-80 flex justify-center">
+              <Pie
+                data={pieChartData}
+                options={{
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Linijski graf kretanja prodaje s odabirom artikala */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <h2 className="text-sm font-bold text-gray-700">
+              Kretanje prodaje kroz vrijeme
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {artikli.slice(0, 10).map((artikl) => (
+                <label key={artikl.id} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    className="form-checkbox h-4 w-4 text-indigo-600"
+                    checked={selectedArtikli.includes(artikl.slug)}
+                    onChange={() => handleArtiklCheck(artikl.slug)}
+                    disabled={
+                      !selectedArtikli.includes(artikl.slug) &&
+                      selectedArtikli.length >= 4
+                    }
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {artikl.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="h-80">
+            <Line
+              data={lineChartData}
+              options={{
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                  },
+                },
+                plugins: {
+                  tooltip: {
+                    mode: "index",
+                    intersect: false,
+                  },
+                  legend: {
+                    position: "top",
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StatistikaPage;
