@@ -1,8 +1,19 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { toast } from "react-hot-toast";
 import { Switch } from "@headlessui/react";
+import { format } from "date-fns";
 
 const SettingsPage = () => {
   const [settings, setSettings] = useState({
@@ -18,6 +29,9 @@ const SettingsPage = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedDateToDelete, setSelectedDateToDelete] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingRecord, setIsDeletingRecord] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -95,6 +109,82 @@ const SettingsPage = () => {
       </div>
     </Switch.Group>
   );
+
+  const DeleteModal = ({ date, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-[500px] max-w-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Potvrda brisanja
+          </h2>
+        </div>
+        <div className="p-6">
+          <p className="text-gray-700 text-left">
+            Jeste li sigurni da želite obrisati zapis za datum{" "}
+            <span className="font-medium">
+              {format(new Date(date), "dd.MM.yyyy.")}
+            </span>
+            ?
+          </p>
+          <p className="text-sm text-gray-500 mt-2 text-left">
+            Ova akcija je nepovratna i obrisat će sve podatke za odabrani dan.
+          </p>
+        </div>
+        <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            Odustani
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Obriši
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const handleDeleteRecord = async () => {
+    setIsDeletingRecord(true);
+    try {
+      // 1. Dohvati podatke prije brisanja za log
+      const recordRef = doc(db, "dnevniUnosi", selectedDateToDelete);
+      const recordDoc = await getDoc(recordRef);
+
+      if (!recordDoc.exists()) {
+        toast.error("Zapis za odabrani datum ne postoji");
+        return;
+      }
+
+      const recordData = recordDoc.data();
+
+      // 2. Obriši zapis
+      await deleteDoc(recordRef);
+
+      // 3. Kreiraj log o brisanju
+      const logRef = collection(db, "logovi");
+      await addDoc(logRef, {
+        type: "DELETE",
+        date: selectedDateToDelete,
+        timestamp: new Date().toISOString(),
+        itemCount: recordData.stavke.length,
+        items: recordData.stavke,
+      });
+
+      toast.success("Zapis je uspješno obrisan");
+      setSelectedDateToDelete("");
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      toast.error("Greška pri brisanju zapisa");
+    } finally {
+      setIsDeletingRecord(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -233,6 +323,99 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
+
+      <div className="bg-white rounded-lg shadow-sm ring-1 ring-gray-900/5 mt-8">
+        <div className="px-8 py-6 border-b border-gray-200">
+          <div className="flex items-center">
+            <svg
+              className="h-6 w-6 text-red-600 mr-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            <h2 className="text-lg font-medium text-gray-900">
+              Brisanje zapisa
+            </h2>
+          </div>
+          <p className="mt-1 text-sm text-gray-500 text-left">
+            Odaberite datum za koji želite obrisati zapis. Ova akcija će
+            obrisati sve podatke za odabrani dan.
+          </p>
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+              Datum
+            </label>
+            <div className="flex gap-4 items-center">
+              <div className="flex-1">
+                <input
+                  type="date"
+                  value={selectedDateToDelete}
+                  onChange={(e) => setSelectedDateToDelete(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={!selectedDateToDelete || isDeletingRecord}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isDeletingRecord ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Brisanje...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Obriši zapis
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {isDeleteModalOpen && (
+        <DeleteModal
+          date={selectedDateToDelete}
+          onConfirm={handleDeleteRecord}
+          onCancel={() => setIsDeleteModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

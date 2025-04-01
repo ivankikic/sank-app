@@ -314,7 +314,9 @@ const LogList = ({ refreshTrigger }) => {
                     ${
                       log.type === "CREATE"
                         ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
+                        : log.type === "UPDATE"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
                     }`}
                   >
                     {log.type}
