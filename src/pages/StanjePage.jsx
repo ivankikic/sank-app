@@ -13,7 +13,6 @@ import { hr } from "date-fns/locale";
 import ExportModal from "../components/ExportModal";
 import { toast } from "react-hot-toast";
 import { generateExcelReport } from "../utils/excelExport";
-import { Popover, Transition } from "@headlessui/react";
 import { getDoc, doc } from "firebase/firestore";
 import StockAlerts from "../components/StockAlerts";
 
@@ -47,12 +46,14 @@ const StanjePage = () => {
         const settingsData = settingsDoc.exists() ? settingsDoc.data() : null;
         setSettings(settingsData);
 
-        // 2. Dohvati artikle
+        // 2. Dohvati artikle i sortiraj ih po order polju
         const artikliSnapshot = await getDocs(collection(db, "artikli"));
-        const artikliData = artikliSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const artikliData = artikliSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
         setArtikli(artikliData);
 
         // 3. Dohvati podatke za tjedan

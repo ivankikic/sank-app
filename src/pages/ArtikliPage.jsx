@@ -268,7 +268,7 @@ function ArtikliPage() {
                                 ⋮⋮
                               </span>
                               <span className="text-gray-400 text-sm">
-                                #{artikl.order}
+                                #{artikl.order + 1}
                               </span>
                               <span className="text-gray-900">
                                 {artikl.name}
@@ -292,7 +292,7 @@ function ArtikliPage() {
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-gray-400 text-sm">
-                      #{artikl.order}
+                      #{artikl.order + 1}
                     </span>
                     <span className="text-gray-900">{artikl.name}</span>
                   </div>

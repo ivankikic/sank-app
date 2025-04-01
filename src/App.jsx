@@ -52,6 +52,7 @@ function App() {
   }, []);
 
   const handleLock = useCallback(() => {
+    // Uvijek dopusti ručno zaključavanje, bez obzira na postavke
     localStorage.removeItem("app_unlocked");
     setIsUnlocked(false);
   }, []);
@@ -70,10 +71,14 @@ function App() {
 
     const resetTimer = () => {
       clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(handleLock, INACTIVE_TIMEOUT);
+      inactivityTimer = setTimeout(() => {
+        // Samo automatski zaključaj ako je omogućeno u postavkama
+        if (appSettings?.appLock?.enabled) {
+          handleLock();
+        }
+      }, INACTIVE_TIMEOUT);
     };
 
-    // Eventi koji resetiraju timer
     const events = [
       "mousedown",
       "mousemove",
@@ -86,10 +91,8 @@ function App() {
       document.addEventListener(event, resetTimer);
     });
 
-    // Postavi inicijalni timer
     resetTimer();
 
-    // Cleanup
     return () => {
       clearTimeout(inactivityTimer);
       events.forEach((event) => {
@@ -106,8 +109,8 @@ function App() {
     );
   }
 
-  // Prikaži lock screen samo ako je zaključavanje omogućeno u postavkama
-  if (!isUnlocked && appSettings?.appLock?.enabled) {
+  // Maknuli smo provjeru appSettings?.appLock?.enabled
+  if (!isUnlocked) {
     return <LockScreen onUnlock={handleUnlock} />;
   }
 
