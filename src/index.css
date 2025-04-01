@@ -1,3 +1,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #cdcdcd;
+}
+
+@layer base {
+  /* Dodajemo !important i više specifičnosti */
+  button:focus,
+  button:focus-within,
+  button:-moz-focus-inner {
+    outline: none !important;
+    border: none !important;
+    -moz-outline-style: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Zadržavamo accessibility samo za keyboard navigation */
+  button:focus-visible {
+    outline: 2px solid #4f46e5 !important;
+    outline-offset: 2px !important;
+  }
+}

@@ -1,49 +1,55 @@
 import { Link, useLocation } from "react-router-dom";
 
-function Header() {
+const Header = () => {
   const location = useLocation();
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-[1350px] mx-auto px-6">
-        <nav className="h-14">
-          <ul className="flex items-center h-full space-x-8">
-            <li className="text-lg font-semibold text-gray-900">Invero</li>
-            <li>
+      <nav className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <p className="h-8 w-auto select-none">
+                <span className="text-xl font-bold"> Invero</span>
+              </p>
+            </div>
+            <div className="flex space-x-8 ml-10">
               <Link
                 to="/"
-                className={`text-sm transition-colors focus:outline-none relative ${
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   location.pathname === "/"
-                    ? "text-indigo-600 font-medium"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "border-indigo-500 text-gray-900"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 }`}
               >
                 Početna
-                {location.pathname === "/" && (
-                  <div className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-indigo-600" />
-                )}
               </Link>
-            </li>
-            <li>
               <Link
                 to="/artikli"
-                className={`text-sm transition-colors focus:outline-none relative ${
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   location.pathname === "/artikli"
-                    ? "text-indigo-600 font-medium"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "border-indigo-500 text-gray-900"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 }`}
               >
                 Artikli
-                {location.pathname === "/artikli" && (
-                  <div className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-indigo-600" />
-                )}
               </Link>
-            </li>
-          </ul>
-        </nav>
-      </div>
+              <Link
+                to="/stanje"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  location.pathname === "/stanje"
+                    ? "border-indigo-500 text-gray-900"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                }`}
+              >
+                Stanje
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
     </header>
   );
-}
+};
 
 export default Header;
