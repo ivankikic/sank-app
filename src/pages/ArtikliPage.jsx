@@ -7,12 +7,16 @@ import {
   doc,
   updateDoc,
   writeBatch,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "react-hot-toast";
 import { DragDropContext, Draggable } from "react-beautiful-dnd";
 import { StrictModeDroppable } from "./StrictModeDroppable";
+import { startOfDay } from "date-fns";
 
 function ArtikliPage() {
   const [artikli, setArtikli] = useState([]);
@@ -26,6 +30,8 @@ function ArtikliPage() {
   const [editMinStock, setEditMinStock] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [currentStocks, setCurrentStocks] = useState({});
+  const [isLoadingStocks, setIsLoadingStocks] = useState(true);
 
   const fetchArtikli = async () => {
     setIsLoading(true);
@@ -45,8 +51,38 @@ function ArtikliPage() {
     }
   };
 
+  const calculateCurrentStocks = async () => {
+    setIsLoadingStocks(true);
+    try {
+      const unosiQuery = query(collection(db, "dnevniUnosi"), orderBy("datum"));
+      const unosiSnapshot = await getDocs(unosiQuery);
+
+      const stocks = {};
+      unosiSnapshot.docs.forEach((doc) => {
+        const stavke = doc.data().stavke;
+        stavke.forEach((stavka) => {
+          if (!stocks[stavka.artiklId]) {
+            stocks[stavka.artiklId] = 0;
+          }
+          stocks[stavka.artiklId] += (stavka.ulaz || 0) - (stavka.izlaz || 0);
+        });
+      });
+
+      setCurrentStocks(stocks);
+    } catch (error) {
+      console.error("Error calculating stocks:", error);
+      toast.error("Greška pri dohvaćanju stanja");
+    } finally {
+      setIsLoadingStocks(false);
+    }
+  };
+
   useEffect(() => {
-    fetchArtikli();
+    const loadData = async () => {
+      await fetchArtikli();
+      await calculateCurrentStocks();
+    };
+    loadData();
   }, []);
 
   const getNextOrder = () => {
@@ -311,10 +347,10 @@ function ArtikliPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow">
-          {isLoading ? (
+          {isLoading || isLoadingStocks ? (
             <div className="px-6 py-8 flex flex-col items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-              <p className="mt-4 text-sm text-gray-500">Učitavam artikle...</p>
+              <p className="mt-4 text-sm text-gray-500">Učitavam podatke...</p>
             </div>
           ) : isSortMode ? (
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -385,50 +421,98 @@ function ArtikliPage() {
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-gray-200">
-                  {filteredArtikli.map((artikl) => (
-                    <li
-                      key={artikl.docId}
-                      className="px-6 py-4 flex items-center justify-between hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="text-gray-400 text-sm">
-                          #{artikl.order + 1}
-                        </span>
-                        <span className="text-gray-900">{artikl.name}</span>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-sm text-gray-500">
-                          Min. stanje: {artikl.minStock || 10}
-                        </div>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => {
-                              setSelectedArtikl(artikl);
-                              setEditName(artikl.name);
-                              setEditMinStock(
-                                artikl.minStock?.toString() || "10"
-                              );
-                              setIsEditModalOpen(true);
-                            }}
-                            className="text-gray-400 hover:text-indigo-600 transition-colors"
-                          >
-                            Uredi
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedArtikl(artikl);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="text-gray-400 hover:text-red-600 transition-colors"
-                          >
-                            Obriši
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-b border-gray-200"
+                        >
+                          #
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
+                        >
+                          Artikl
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
+                        >
+                          Trenutno stanje
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
+                        >
+                          Min. stanje
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
+                        >
+                          Akcije
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {filteredArtikli.map((artikl) => {
+                        const currentStock = currentStocks[artikl.slug] || 0;
+                        const minStock = artikl.minStock || 10;
+                        const isLowStock = currentStock < minStock;
+
+                        return (
+                          <tr key={artikl.docId} className="hover:bg-gray-50">
+                            <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400 border-r border-gray-100 text-center">
+                              {artikl.order + 1}
+                            </td>
+                            <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-100 text-left">
+                              {artikl.name}
+                            </td>
+                            <td
+                              className={`px-6 py-3 whitespace-nowrap text-sm text-center font-medium border-r border-gray-100 ${
+                                isLowStock ? "text-red-600" : "text-gray-900"
+                              }`}
+                            >
+                              {currentStock}
+                            </td>
+                            <td className="px-6 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-100">
+                              {minStock}
+                            </td>
+                            <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
+                              <div className="flex justify-center gap-3">
+                                <button
+                                  onClick={() => {
+                                    setSelectedArtikl(artikl);
+                                    setEditName(artikl.name);
+                                    setEditMinStock(
+                                      artikl.minStock?.toString() || "10"
+                                    );
+                                    setIsEditModalOpen(true);
+                                  }}
+                                  className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                >
+                                  Uredi
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedArtikl(artikl);
+                                    setIsDeleteModalOpen(true);
+                                  }}
+                                  className="text-gray-400 hover:text-red-600 transition-colors"
+                                >
+                                  Obriši
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </>
           )}
@@ -539,7 +623,7 @@ function ArtikliPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="Minimalno stanje"
                   />
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 text-left">
                     Upozorenje će se prikazati kada zalihe padnu ispod ove
                     vrijednosti
                   </p>

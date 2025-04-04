@@ -123,50 +123,64 @@ const StockAlerts = () => {
             leaveFrom="opacity-100 translate-y-0"
             leaveTo="opacity-0 translate-y-1"
           >
-            <Popover.Panel className="absolute z-50 mt-3 left-5 top-3 transform px-4 sm:px-0 lg:max-w-md">
+            <Popover.Panel className="absolute z-50 mt-3 left-5 top-3 transform px-4 sm:px-0">
               <div className="overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5">
-                <div className="relative bg-white p-6 w-[400px]">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-6 w-6 text-yellow-400"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <h3 className="text-lg font-medium text-yellow-800 mb-3">
-                        Upozorenje o zalihama
-                      </h3>
-                      <div className="text-sm text-yellow-700">
-                        <ul className="space-y-2 max-h-[300px] overflow-y-auto">
-                          {alerts.map((alert) => (
-                            <li
-                              key={alert.id}
-                              className="flex items-baseline text-left"
-                            >
-                              <span className="h-1.5 w-1.5 rounded-full bg-yellow-400 mr-2 mt-1.5 flex-shrink-0"></span>
-                              <span className="flex-1">
-                                <span className="font-medium">
+                <div className="relative bg-white p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg
+                      className="h-5 w-5 text-yellow-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <h3 className="text-lg font-medium text-yellow-800">
+                      Upozorenje o zalihama
+                    </h3>
+                  </div>
+
+                  <div className="w-[480px]">
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[280px] border-b border-gray-200">
+                              Artikl
+                            </th>
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px] border-b border-gray-200">
+                              Trenutno
+                            </th>
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px] border-b border-gray-200">
+                              Minimum
+                            </th>
+                          </tr>
+                        </thead>
+                      </table>
+                      <div className="max-h-[300px] overflow-y-auto">
+                        <table className="min-w-full">
+                          <tbody className="bg-white divide-y divide-gray-100">
+                            {alerts.map((alert) => (
+                              <tr
+                                key={alert.id}
+                                className="hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                              >
+                                <td className="px-4 py-2.5 text-sm font-medium text-gray-900 w-[280px] text-left border-r border-gray-100">
                                   {alert.name}
-                                </span>
-                                <span className="block text-gray-600">
-                                  Trenutno stanje:{" "}
-                                  <span className="font-medium text-gray-900">
-                                    {alert.currentStock}
-                                  </span>{" "}
-                                  (min. {alert.minStock})
-                                </span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
+                                </td>
+                                <td className="px-4 py-2.5 text-sm text-center text-red-600 font-medium w-[100px] border-r border-gray-100">
+                                  {alert.currentStock}
+                                </td>
+                                <td className="px-4 py-2.5 text-sm text-center text-gray-500 w-[100px]">
+                                  {alert.minStock}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
