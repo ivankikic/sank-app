@@ -119,10 +119,15 @@ const StanjePage = () => {
 
           // Filtriraj artikle s niskim stanjem
           const alerts = artikliData
-            .filter((artikl) => currentStocks[artikl.slug] <= minStock)
+            .filter((artikl) => {
+              const currentStock = currentStocks[artikl.slug];
+              const minStock = artikl.minStock || 10;
+              return currentStock <= minStock;
+            })
             .map((artikl) => ({
               ...artikl,
               currentStock: currentStocks[artikl.slug],
+              minStock: artikl.minStock || 10,
             }));
 
           setStockAlerts(alerts);

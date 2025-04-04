@@ -23,6 +23,7 @@ function ArtikliPage() {
   const [textareaContent, setTextareaContent] = useState("");
   const [selectedArtikl, setSelectedArtikl] = useState(null);
   const [editName, setEditName] = useState("");
+  const [editMinStock, setEditMinStock] = useState("");
 
   const fetchArtikli = async () => {
     const querySnapshot = await getDocs(collection(db, "artikli"));
@@ -68,6 +69,7 @@ function ArtikliPage() {
           name: trimmedName,
           slug: slug,
           order: currentOrder,
+          minStock: 10,
         });
 
         currentOrder++;
@@ -116,6 +118,7 @@ function ArtikliPage() {
         name: trimmedName,
         slug: slug,
         order: selectedArtikl.order,
+        minStock: parseInt(editMinStock) || 10,
       });
 
       toast.success("Artikl uspješno ažuriran");
@@ -123,6 +126,7 @@ function ArtikliPage() {
       setIsEditModalOpen(false);
       setSelectedArtikl(null);
       setEditName("");
+      setEditMinStock("");
     } catch (error) {
       console.error("Greška prilikom ažuriranja artikla:", error);
       toast.error("Greška prilikom ažuriranja artikla");
@@ -296,26 +300,32 @@ function ArtikliPage() {
                     </span>
                     <span className="text-gray-900">{artikl.name}</span>
                   </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setSelectedArtikl(artikl);
-                        setEditName(artikl.name);
-                        setIsEditModalOpen(true);
-                      }}
-                      className="text-gray-400 hover:text-indigo-600 transition-colors"
-                    >
-                      Uredi
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedArtikl(artikl);
-                        setIsDeleteModalOpen(true);
-                      }}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      Obriši
-                    </button>
+                  <div className="flex items-center gap-6">
+                    <div className="text-sm text-gray-500">
+                      Min. stanje: {artikl.minStock || 10}
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setSelectedArtikl(artikl);
+                          setEditName(artikl.name);
+                          setEditMinStock(artikl.minStock?.toString() || "10");
+                          setIsEditModalOpen(true);
+                        }}
+                        className="text-gray-400 hover:text-indigo-600 transition-colors"
+                      >
+                        Uredi
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedArtikl(artikl);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="text-gray-400 hover:text-red-600 transition-colors"
+                      >
+                        Obriši
+                      </button>
+                    </div>
                   </div>
                 </li>
               ))}
@@ -403,17 +413,36 @@ function ArtikliPage() {
                   Uredi artikl
                 </h2>
               </div>
-              <div className="p-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
-                  Naziv artikla
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Naziv artikla"
-                />
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Naziv artikla
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Naziv artikla"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Minimalno stanje
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editMinStock}
+                    onChange={(e) => setEditMinStock(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Minimalno stanje"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Upozorenje će se prikazati kada zalihe padnu ispod ove
+                    vrijednosti
+                  </p>
+                </div>
               </div>
               <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
                 <button
@@ -421,6 +450,7 @@ function ArtikliPage() {
                     setIsEditModalOpen(false);
                     setSelectedArtikl(null);
                     setEditName("");
+                    setEditMinStock("");
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
