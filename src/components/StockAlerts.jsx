@@ -63,14 +63,17 @@ const StockAlerts = () => {
         });
 
         // Filtriraj artikle koji su ispod minimalne količine
-        const minStock = settings.stockAlerts.minStock || 10;
         const currentAlerts = artikliData
-          .filter((artikl) => (currentStock[artikl.slug] || 0) <= minStock)
+          .filter((artikl) => {
+            const currentStockValue = currentStock[artikl.slug] || 0;
+            const artiklMinStock = artikl.minStock || 10;
+            return currentStockValue < artiklMinStock;
+          })
           .map((artikl) => ({
             id: artikl.id,
             name: artikl.name,
             currentStock: currentStock[artikl.slug] || 0,
-            minStock,
+            minStock: artikl.minStock || 10,
           }));
 
         setAlerts(currentAlerts);
@@ -157,7 +160,8 @@ const StockAlerts = () => {
                                   Trenutno stanje:{" "}
                                   <span className="font-medium text-gray-900">
                                     {alert.currentStock}
-                                  </span>
+                                  </span>{" "}
+                                  (min. {alert.minStock})
                                 </span>
                               </span>
                             </li>

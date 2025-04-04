@@ -24,15 +24,25 @@ function ArtikliPage() {
   const [selectedArtikl, setSelectedArtikl] = useState(null);
   const [editName, setEditName] = useState("");
   const [editMinStock, setEditMinStock] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchArtikli = async () => {
-    const querySnapshot = await getDocs(collection(db, "artikli"));
-    const data = querySnapshot.docs.map((doc) => ({
-      docId: doc.id,
-      ...doc.data(),
-    }));
-    const sortedData = data.sort((a, b) => a.order - b.order);
-    setArtikli(sortedData);
+    setIsLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "artikli"));
+      const data = querySnapshot.docs.map((doc) => ({
+        docId: doc.id,
+        ...doc.data(),
+      }));
+      const sortedData = data.sort((a, b) => a.order - b.order);
+      setArtikli(sortedData);
+    } catch (error) {
+      console.error("Error fetching artikli:", error);
+      toast.error("Greška pri dohvaćanju artikala");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -168,6 +178,11 @@ function ArtikliPage() {
     }
   };
 
+  // Dodaj funkciju za filtriranje artikala
+  const filteredArtikli = artikli.filter((artikl) =>
+    artikl.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="max-w-[1350px] mx-auto px-6">
       <div className="flex flex-col gap-6">
@@ -242,8 +257,66 @@ function ArtikliPage() {
           </div>
         </div>
 
+        {/* Modificirani search bar */}
+        <div className="flex justify-end">
+          <div className="w-64 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Pretraži artikle..."
+              className="w-full text-sm pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg
+                  className="h-5 w-5 text-gray-400 hover:text-gray-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
+            {searchQuery && (
+              <div className="absolute -bottom-6 left-0 text-sm text-gray-500">
+                Pronađeno {filteredArtikli.length} artikala
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow">
-          {isSortMode ? (
+          {isLoading ? (
+            <div className="px-6 py-8 flex flex-col items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+              <p className="mt-4 text-sm text-gray-500">Učitavam artikle...</p>
+            </div>
+          ) : isSortMode ? (
             <DragDropContext onDragEnd={handleDragEnd}>
               <StrictModeDroppable droppableId="artikli">
                 {(provided) => (
@@ -288,48 +361,76 @@ function ArtikliPage() {
               </StrictModeDroppable>
             </DragDropContext>
           ) : (
-            <ul className="divide-y divide-gray-200">
-              {artikli.map((artikl) => (
-                <li
-                  key={artikl.docId}
-                  className="px-6 py-4 flex items-center justify-between hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="text-gray-400 text-sm">
-                      #{artikl.order + 1}
-                    </span>
-                    <span className="text-gray-900">{artikl.name}</span>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-sm text-gray-500">
-                      Min. stanje: {artikl.minStock || 10}
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => {
-                          setSelectedArtikl(artikl);
-                          setEditName(artikl.name);
-                          setEditMinStock(artikl.minStock?.toString() || "10");
-                          setIsEditModalOpen(true);
-                        }}
-                        className="text-gray-400 hover:text-indigo-600 transition-colors"
-                      >
-                        Uredi
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedArtikl(artikl);
-                          setIsDeleteModalOpen(true);
-                        }}
-                        className="text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        Obriši
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <>
+              {filteredArtikli.length === 0 ? (
+                <div className="px-6 py-8 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p className="mt-4 text-gray-900 font-medium">
+                    Nema pronađenih artikala
+                  </p>
+                  <p className="mt-1 text-gray-500">
+                    Pokušajte s drugačijim pojmom za pretragu
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-200">
+                  {filteredArtikli.map((artikl) => (
+                    <li
+                      key={artikl.docId}
+                      className="px-6 py-4 flex items-center justify-between hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-400 text-sm">
+                          #{artikl.order + 1}
+                        </span>
+                        <span className="text-gray-900">{artikl.name}</span>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-sm text-gray-500">
+                          Min. stanje: {artikl.minStock || 10}
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              setSelectedArtikl(artikl);
+                              setEditName(artikl.name);
+                              setEditMinStock(
+                                artikl.minStock?.toString() || "10"
+                              );
+                              setIsEditModalOpen(true);
+                            }}
+                            className="text-gray-400 hover:text-indigo-600 transition-colors"
+                          >
+                            Uredi
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedArtikl(artikl);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            className="text-gray-400 hover:text-red-600 transition-colors"
+                          >
+                            Obriši
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
 
