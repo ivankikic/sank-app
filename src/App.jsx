@@ -72,7 +72,6 @@ function App() {
     const resetTimer = () => {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        // Samo automatski zaključaj ako je omogućeno u postavkama
         if (appSettings?.appLock?.enabled) {
           handleLock();
         }
@@ -85,6 +84,7 @@ function App() {
       "keypress",
       "scroll",
       "touchstart",
+      "click",
     ];
 
     events.forEach((event) => {
