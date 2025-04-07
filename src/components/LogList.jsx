@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-const LogList = ({ refreshTrigger }) => {
+const LogList = ({ refreshTrigger, onCopyLog }) => {
   const [logs, setLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -583,6 +583,25 @@ const LogList = ({ refreshTrigger }) => {
                             strokeLinejoin="round"
                             strokeWidth={2}
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => onCopyLog(log)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Kopiraj u ručni unos"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                           />
                         </svg>
                       </button>

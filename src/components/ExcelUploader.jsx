@@ -329,7 +329,7 @@ const ExcelUploader = ({ onLogAdded }) => {
 
   return (
     <div className="p-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-6">Import Excela</h2>
+      <h2 className="text-lg font-medium text-gray-900 mb-6">Unos Excela</h2>
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -437,7 +437,7 @@ const ExcelUploader = ({ onLogAdded }) => {
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
               />
             </svg>
-            Upload Excel
+            Spremi
           </button>
         </div>
 
