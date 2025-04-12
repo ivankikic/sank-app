@@ -168,7 +168,7 @@ export const generateExcelReport = async (startDate, endDate, setIsLoading) => {
     };
 
     // Header red (datum + dan)
-    const dateHeader = ["", ""];
+    const dateHeader = ["", "", ""];
     dates.forEach((date) => {
       const dayDate = format(new Date(date), "dd.MM.");
       const dayName = capitalizeFirstLetter(format(new Date(date), "EEEE"));
@@ -177,7 +177,7 @@ export const generateExcelReport = async (startDate, endDate, setIsLoading) => {
     sheet.addRow(dateHeader);
 
     // Subheader (ulaz, izlaz, stanje)
-    const subHeader = ["Artikl", "Početno stanje"];
+    const subHeader = ["Artikl", "Šifra", "Početno stanje"];
     dates.forEach(() => {
       subHeader.push("Ulaz", "Izlaz", "Stanje");
     });
@@ -185,7 +185,7 @@ export const generateExcelReport = async (startDate, endDate, setIsLoading) => {
 
     // Podaci po artiklima
     artikli.forEach((artikl, index) => {
-      const row = [artikl.name, previousStanje[artikl.slug] || 0];
+      const row = [artikl.name, artikl.sifra, previousStanje[artikl.slug] || 0];
       let trenutnoStanje = previousStanje[artikl.slug] || 0;
 
       dates.forEach((date) => {
@@ -213,12 +213,13 @@ export const generateExcelReport = async (startDate, endDate, setIsLoading) => {
 
     // Spajanje ćelija za header datume
     dates.forEach((_, index) => {
-      sheet.mergeCells(1, 3 + index * 3, 1, 5 + index * 3);
+      sheet.mergeCells(1, 4 + index * 3, 1, 6 + index * 3);
     });
 
     // Širina kolona
     sheet.columns = [
       { width: 25 }, // Artikl
+      { width: 15 }, // Šifra
       { width: 18 }, // Početno stanje
       ...dates.flatMap(() => [{ width: 12 }, { width: 12 }, { width: 12 }]),
     ];

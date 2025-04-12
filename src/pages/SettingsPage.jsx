@@ -34,6 +34,7 @@ const SettingsPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeletingRecord, setIsDeletingRecord] = useState(false);
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [artikli, setArtikli] = useState([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -53,6 +54,24 @@ const SettingsPage = () => {
     };
 
     fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const fetchArtikli = async () => {
+      try {
+        const artikliSnapshot = await getDocs(collection(db, "artikli"));
+        const artikliData = artikliSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setArtikli(artikliData);
+      } catch (error) {
+        console.error("Error fetching artikli:", error);
+        toast.error("Greška pri učitavanju artikala");
+      }
+    };
+
+    fetchArtikli();
   }, []);
 
   const handleSettingChange = (section, setting, value) => {
@@ -174,7 +193,14 @@ const SettingsPage = () => {
         date: selectedDateToDelete,
         timestamp: new Date().toISOString(),
         itemCount: recordData.stavke.length,
-        items: recordData.stavke,
+        items: recordData.stavke.map((stavka) => {
+          const artikl = artikli.find((a) => a.slug === stavka.artiklId);
+          return {
+            ...stavka,
+            sifra: artikl?.sifra || "",
+            naziv: artikl?.name || stavka.artiklId,
+          };
+        }),
       });
 
       toast.success("Zapis je uspješno obrisan");

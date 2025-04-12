@@ -32,6 +32,12 @@ function ArtikliPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentStocks, setCurrentStocks] = useState({});
   const [isLoadingStocks, setIsLoadingStocks] = useState(true);
+  const [newArtikl, setNewArtikl] = useState({
+    sifra: "",
+    name: "",
+    minStock: "10",
+  });
+  const [editSifra, setEditSifra] = useState("");
 
   const fetchArtikli = async () => {
     setIsLoading(true);
@@ -91,46 +97,40 @@ function ArtikliPage() {
     return maxOrder + 1;
   };
 
-  const handleAddArtikli = async () => {
-    const artikliNames = textareaContent
-      .split("\n")
-      .filter((name) => name.trim());
-
+  const handleAddArtikl = async () => {
     try {
-      const existingArtikli = new Set(artikli.map((a) => a.slug));
-      const duplicates = [];
-      let currentOrder = getNextOrder();
+      const trimmedName = newArtikl.name.trim();
+      const trimmedSifra = newArtikl.sifra.trim();
 
-      for (const name of artikliNames) {
-        const trimmedName = name.trim();
-        const slug = trimmedName.toLowerCase().replace(/\s+/g, "-");
-
-        if (existingArtikli.has(slug)) {
-          duplicates.push(trimmedName);
-          continue;
-        }
-
-        await addDoc(collection(db, "artikli"), {
-          id: uuidv4().slice(0, 8),
-          name: trimmedName,
-          slug: slug,
-          order: currentOrder,
-          minStock: 10,
-        });
-
-        currentOrder++;
+      if (!trimmedSifra || !trimmedName) {
+        toast.error("Šifra i naziv su obavezni");
+        return;
       }
 
-      if (duplicates.length > 0) {
-        toast.error(`Sljedeći artikli već postoje:\n${duplicates.join("\n")}`);
+      const exists = artikli.some((a) => a.sifra === trimmedSifra);
+      if (exists) {
+        toast.error("Artikl s tom šifrom već postoji");
+        return;
       }
+
+      const slug = trimmedName.toLowerCase().replace(/\s+/g, "-");
+
+      await addDoc(collection(db, "artikli"), {
+        id: uuidv4().slice(0, 8),
+        sifra: trimmedSifra,
+        name: trimmedName,
+        slug: slug,
+        order: getNextOrder(),
+        minStock: parseInt(newArtikl.minStock) || 10,
+      });
 
       fetchArtikli();
       setIsModalOpen(false);
-      setTextareaContent("");
+      setNewArtikl({ sifra: "", name: "", minStock: "10" });
+      toast.success("Artikl uspješno dodan");
     } catch (error) {
-      console.error("Error adding articles:", error);
-      toast.error("Došlo je do greške prilikom dodavanja artikala");
+      console.error("Error adding article:", error);
+      toast.error("Došlo je do greške prilikom dodavanja artikla");
     }
   };
 
@@ -150,18 +150,25 @@ function ArtikliPage() {
   const handleEdit = async () => {
     try {
       const trimmedName = editName.trim();
+      const trimmedSifra = editSifra.trim();
       const slug = trimmedName.toLowerCase().replace(/\s+/g, "-");
 
+      if (!trimmedSifra) {
+        toast.error("Šifra je obavezna");
+        return;
+      }
+
       const exists = artikli.some(
-        (a) => a.slug === slug && a.docId !== selectedArtikl.docId
+        (a) => a.sifra === trimmedSifra && a.docId !== selectedArtikl.docId
       );
       if (exists) {
-        toast.error("Artikl s tim imenom već postoji");
+        toast.error("Artikl s tom šifrom već postoji");
         return;
       }
 
       await updateDoc(doc(db, "artikli", selectedArtikl.docId), {
         name: trimmedName,
+        sifra: trimmedSifra,
         slug: slug,
         order: selectedArtikl.order,
         minStock: parseInt(editMinStock) || 10,
@@ -172,6 +179,7 @@ function ArtikliPage() {
       setIsEditModalOpen(false);
       setSelectedArtikl(null);
       setEditName("");
+      setEditSifra("");
       setEditMinStock("");
     } catch (error) {
       console.error("Greška prilikom ažuriranja artikla:", error);
@@ -433,6 +441,12 @@ function ArtikliPage() {
                         </th>
                         <th
                           scope="col"
+                          className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
+                        >
+                          Šifra
+                        </th>
+                        <th
+                          scope="col"
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
                         >
                           Artikl
@@ -468,6 +482,9 @@ function ArtikliPage() {
                             <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-400 border-r border-gray-100 text-center">
                               {artikl.order + 1}
                             </td>
+                            <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100">
+                              {artikl.sifra}
+                            </td>
                             <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-100 text-left">
                               {artikl.name}
                             </td>
@@ -487,6 +504,7 @@ function ArtikliPage() {
                                   onClick={() => {
                                     setSelectedArtikl(artikl);
                                     setEditName(artikl.name);
+                                    setEditSifra(artikl.sifra);
                                     setEditMinStock(
                                       artikl.minStock?.toString() || "10"
                                     );
@@ -518,32 +536,81 @@ function ArtikliPage() {
           )}
         </div>
 
-        {/* Modals with updated styling */}
+        {/* Novi modal za unos artikla */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-xl w-[500px] max-w-lg">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Dodaj nove artikle
+                  Dodaj novi artikl
                 </h2>
               </div>
-              <div className="p-6">
-                <textarea
-                  value={textareaContent}
-                  onChange={(e) => setTextareaContent(e.target.value)}
-                  placeholder="Unesi artikle (jedan po retku)&#10;npr:&#10;Coca Cola 0.5L&#10;Jamnica 1L"
-                  className="w-full h-40 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Šifra artikla
+                  </label>
+                  <input
+                    type="text"
+                    value={newArtikl.sifra}
+                    onChange={(e) =>
+                      setNewArtikl((prev) => ({
+                        ...prev,
+                        sifra: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Unesite šifru artikla"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Naziv artikla
+                  </label>
+                  <input
+                    type="text"
+                    value={newArtikl.name}
+                    onChange={(e) =>
+                      setNewArtikl((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Unesite naziv artikla"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Minimalno stanje
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newArtikl.minStock}
+                    onChange={(e) =>
+                      setNewArtikl((prev) => ({
+                        ...prev,
+                        minStock: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Unesite minimalno stanje"
+                  />
+                </div>
               </div>
               <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
                 <button
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewArtikl({ sifra: "", name: "", minStock: "10" });
+                  }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
                   Odustani
                 </button>
                 <button
-                  onClick={handleAddArtikli}
+                  onClick={handleAddArtikl}
                   className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Spremi
@@ -601,6 +668,18 @@ function ArtikliPage() {
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Šifra artikla
+                  </label>
+                  <input
+                    type="text"
+                    value={editSifra}
+                    onChange={(e) => setEditSifra(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Unesite šifru artikla"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                     Naziv artikla
                   </label>
                   <input
@@ -608,7 +687,7 @@ function ArtikliPage() {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Naziv artikla"
+                    placeholder="Unesite naziv artikla"
                   />
                 </div>
                 <div>
@@ -635,6 +714,7 @@ function ArtikliPage() {
                     setIsEditModalOpen(false);
                     setSelectedArtikl(null);
                     setEditName("");
+                    setEditSifra("");
                     setEditMinStock("");
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"

@@ -168,14 +168,16 @@ const ExcelUploader = ({ onLogAdded }) => {
         date,
         itemCount,
         timestamp: new Date().toISOString(),
-        items: items.map((item) => ({
-          artiklId: item.artiklId,
-          ulaz: item.ulaz,
-          izlaz: item.izlaz,
-          naziv:
-            validArtikli.find((a) => a.slug === item.artiklId)?.naziv ||
-            item.artiklId,
-        })),
+        items: items.map((item) => {
+          const artikl = validArtikli.find((a) => a.slug === item.artiklId);
+          return {
+            artiklId: item.artiklId,
+            ulaz: item.ulaz,
+            izlaz: item.izlaz,
+            sifra: artikl?.sifra || "",
+            naziv: artikl?.name || item.artiklId,
+          };
+        }),
       });
       onLogAdded?.();
     } catch (error) {

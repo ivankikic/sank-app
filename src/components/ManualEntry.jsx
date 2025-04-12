@@ -197,12 +197,14 @@ const ManualEntry = forwardRef(
           date: selectedDate,
           timestamp: new Date().toISOString(),
           itemCount: stavke.length,
-          items: stavke.map((item) => ({
-            ...item,
-            naziv:
-              artikli.find((a) => a.slug === item.artiklId)?.name ||
-              item.artiklId,
-          })),
+          items: stavke.map((item) => {
+            const artikl = artikli.find((a) => a.slug === item.artiklId);
+            return {
+              ...item,
+              sifra: artikl?.sifra || "",
+              naziv: artikl?.name || item.artiklId,
+            };
+          }),
         });
 
         // Resetiraj formu
@@ -570,13 +572,25 @@ const ManualEntry = forwardRef(
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200"
+                >
+                  #
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                >
+                  Šifra
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
                 >
                   Artikl
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
                 >
                   Ulaz
                 </th>
@@ -591,13 +605,16 @@ const ManualEntry = forwardRef(
             <tbody className="bg-white divide-y divide-gray-200">
               {artikli.map((artikl, index) => (
                 <tr key={artikl.docId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">
-                    <span className="text-gray-400 text-xs mr-2">
-                      {index + 1}.
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
+                    {artikl.sifra}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
                     {artikl.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                     <input
                       type="number"
                       min="0"

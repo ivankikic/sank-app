@@ -303,13 +303,19 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-left w-[60%]">
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200">
+                #
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
+                Šifra
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Artikl
               </th>
-              <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center w-[20%]">
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Ulaz
               </th>
-              <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center w-[20%]">
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Izlaz
               </th>
             </tr>
@@ -317,10 +323,16 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {log.items.map((item, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left w-[60%]">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
+                  {index + 1}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200 text-center">
+                  {item.sifra}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
                   {item.name || artikli[item.artiklId] || item.artiklId}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-center w-[20%]">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200">
                   {item.ulaz > 0 ? (
                     <span className="font-medium text-green-600">
                       +{item.ulaz}
@@ -329,7 +341,7 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
                     <span className="text-gray-400">0</span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-center w-[20%]">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                   {item.izlaz > 0 ? (
                     <span className="font-medium text-red-600">
                       -{item.izlaz}
