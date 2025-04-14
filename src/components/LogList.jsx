@@ -253,6 +253,20 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
     }
   };
 
+  // Dodaj helper funkciju za prijevod tipa akcije
+  const getActionTypeLabel = (type) => {
+    switch (type) {
+      case "CREATE":
+        return "KREIRANO";
+      case "UPDATE":
+        return "AŽURIRANO";
+      case "DELETE":
+        return "OBRISANO";
+      default:
+        return type;
+    }
+  };
+
   const ItemsModal = ({ log, onClose }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -528,7 +542,7 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
                           : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {log.type}
+                      {getActionTypeLabel(log.type)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

@@ -55,32 +55,10 @@ const UpdateConfirmationModal = ({ isOpen, onClose, onConfirm, date }) => {
 const ManualEntry = forwardRef(
   ({ onLogAdded, onDirtyStateChange, initialCopyData, onDataCopied }, ref) => {
     const [artikli, setArtikli] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(() => {
-      const savedEntries = localStorage.getItem("manualEntryData");
-      if (savedEntries) {
-        try {
-          const parsed = JSON.parse(savedEntries);
-          return parsed.date || new Date().toISOString().split("T")[0];
-        } catch (e) {
-          return new Date().toISOString().split("T")[0];
-        }
-      }
-      return new Date().toISOString().split("T")[0];
-    });
-    const [entries, setEntries] = useState(() => {
-      const savedEntries = localStorage.getItem("manualEntryData");
-      if (savedEntries) {
-        try {
-          const parsed = JSON.parse(savedEntries);
-          onDirtyStateChange?.(true);
-          return parsed.entries;
-        } catch (e) {
-          console.error("Error parsing saved entries:", e);
-          return {};
-        }
-      }
-      return {};
-    });
+    const [selectedDate, setSelectedDate] = useState(
+      new Date().toISOString().split("T")[0]
+    );
+    const [entries, setEntries] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -90,9 +68,12 @@ const ManualEntry = forwardRef(
     const [logsForCopy, setLogsForCopy] = useState([]);
     const [isLoadingLogs, setIsLoadingLogs] = useState(false);
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
+    const [isLoadingDateData, setIsLoadingDateData] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
-      const fetchArtikli = async () => {
+      const loadData = async () => {
+        setIsLoading(true);
         try {
           const artikliSnapshot = await getDocs(collection(db, "artikli"));
           const artikliData = artikliSnapshot.docs
@@ -103,21 +84,37 @@ const ManualEntry = forwardRef(
             .sort((a, b) => (a.order || 0) - (b.order || 0));
           setArtikli(artikliData);
 
-          // Inicijaliziraj entries objekt
-          const initialEntries = {};
-          artikliData.forEach((artikl) => {
-            initialEntries[artikl.slug] = { ulaz: "", izlaz: "" };
-          });
-          setEntries(initialEntries);
-          setIsLoading(false);
+          const savedEntries = localStorage.getItem("manualEntryData");
+          if (savedEntries) {
+            try {
+              const parsed = JSON.parse(savedEntries);
+              const lastModified = new Date(parsed.lastModified);
+              const now = new Date();
+              const hoursDiff = (now - lastModified) / (1000 * 60 * 60);
+
+              if (hoursDiff < 24) {
+                setSelectedDate(parsed.date);
+                setEntries(parsed.entries);
+                setIsDirty(true);
+                onDirtyStateChange?.(true);
+              } else {
+                await fetchDataForDate(new Date().toISOString().split("T")[0]);
+              }
+            } catch (e) {
+              await fetchDataForDate(new Date().toISOString().split("T")[0]);
+            }
+          } else {
+            await fetchDataForDate(new Date().toISOString().split("T")[0]);
+          }
         } catch (error) {
           console.error("Error fetching artikli:", error);
           toast.error("Greška pri dohvaćanju artikala");
+        } finally {
           setIsLoading(false);
         }
       };
 
-      fetchArtikli();
+      loadData();
     }, []);
 
     useEffect(() => {
@@ -165,7 +162,45 @@ const ManualEntry = forwardRef(
       );
     }, []);
 
-    // Modificiraj handleInputChange da prati promjene
+    // Prvo ćemo dodati novu funkciju koja će dohvatiti podatke za odabrani datum
+    const fetchDataForDate = async (date) => {
+      setIsLoadingDateData(true);
+      try {
+        const docRef = doc(db, "dnevniUnosi", date);
+        const docSnap = await getDoc(docRef);
+
+        const newEntries = {};
+        artikli.forEach((artikl) => {
+          newEntries[artikl.slug] = { ulaz: "", izlaz: "" };
+        });
+
+        if (docSnap.exists()) {
+          setIsEditMode(true);
+          const data = docSnap.data();
+          data.stavke.forEach((stavka) => {
+            if (newEntries[stavka.artiklId]) {
+              newEntries[stavka.artiklId] = {
+                ulaz: stavka.ulaz?.toString() || "",
+                izlaz: stavka.izlaz?.toString() || "",
+              };
+            }
+          });
+        } else {
+          setIsEditMode(false);
+        }
+
+        setEntries(newEntries);
+        setIsDirty(false);
+        onDirtyStateChange?.(false);
+      } catch (error) {
+        console.error("Error fetching data for date:", error);
+        toast.error("Greška pri dohvaćanju podataka za odabrani datum");
+      } finally {
+        setIsLoadingDateData(false);
+      }
+    };
+
+    // Modificiraj handleInputChange da označi formu kao prljavu samo ako su podaci stvarno promijenjeni
     const handleInputChange = (artiklId, type, value) => {
       const newEntries = {
         ...entries,
@@ -175,11 +210,14 @@ const ManualEntry = forwardRef(
         },
       };
       setEntries(newEntries);
+      setIsDirty(true);
+      onDirtyStateChange?.(true);
+    };
 
-      // Provjeri ima li promjena
-      const hasChanges = checkForChanges(newEntries);
-      setIsDirty(hasChanges);
-      onDirtyStateChange?.(hasChanges);
+    // Modificiraj dio gdje se mijenja datum
+    const handleDateChange = async (newDate) => {
+      setSelectedDate(newDate);
+      await fetchDataForDate(newDate);
     };
 
     const saveData = async (stavke, type) => {
@@ -244,6 +282,7 @@ const ManualEntry = forwardRef(
 
         if (stavke.length === 0) {
           toast.error("Unesite barem jedan podatak");
+          setIsSaving(false);
           return;
         }
 
@@ -253,17 +292,14 @@ const ManualEntry = forwardRef(
         if (existingDoc.exists()) {
           setPendingStavke(stavke);
           setShowUpdateModal(true);
+          setIsSaving(false);
         } else {
           await saveData(stavke, "CREATE");
         }
-
-        // Nakon uspješnog spremanja
-        localStorage.removeItem("manualEntryData");
-        setIsDirty(false);
-        onDirtyStateChange?.(false);
       } catch (error) {
         console.error("Error checking existing data:", error);
         toast.error("Greška pri provjeri postojećih podataka");
+        setIsSaving(false);
       }
     };
 
@@ -401,33 +437,30 @@ const ManualEntry = forwardRef(
       },
     }));
 
-    // Dodaj funkciju za čišćenje forme
-    const handleClearForm = () => {
+    // Preimenuj funkcije i promijeni njihovu logiku
+    const handleResetForm = () => {
       setShowClearConfirmModal(true);
     };
 
-    const handleConfirmClear = () => {
-      const emptyEntries = {};
-      artikli.forEach((artikl) => {
-        emptyEntries[artikl.slug] = { ulaz: "", izlaz: "" };
-      });
-      setEntries(emptyEntries);
-      setSelectedDate(new Date().toISOString().split("T")[0]);
-      localStorage.removeItem("manualEntryData");
-      setIsDirty(false);
-      onDirtyStateChange?.(false);
+    const handleConfirmReset = async () => {
+      // Ponovno dohvati podatke za trenutni datum iz baze
+      await fetchDataForDate(selectedDate);
       setShowClearConfirmModal(false);
-      toast.success("Forma je očišćena");
+      toast.success(
+        isEditMode
+          ? "Podaci su vraćeni na originalno stanje"
+          : "Forma je vraćena na početno stanje"
+      );
     };
 
-    // Dodaj ClearConfirmationModal komponentu
-    const ClearConfirmationModal = () => (
+    // Ažuriraj ClearConfirmationModal u ResetConfirmationModal
+    const ResetConfirmationModal = () => (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
           <div className="mb-4">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-yellow-100 rounded-full">
               <svg
-                className="w-6 h-6 text-red-600"
+                className="w-6 h-6 text-yellow-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -441,11 +474,14 @@ const ManualEntry = forwardRef(
               </svg>
             </div>
             <h3 className="mt-4 text-lg font-medium text-gray-900 text-center">
-              Brisanje unesenih podataka
+              {isEditMode
+                ? "Vraćanje originalnih podataka"
+                : "Vraćanje prazne forme"}
             </h3>
             <p className="mt-2 text-sm text-gray-500 text-center">
-              Jeste li sigurni da želite obrisati sve unesene podatke? Ova
-              akcija se ne može poništiti.
+              {isEditMode
+                ? "Želite li vratiti podatke na originalno stanje iz baze? Sve promjene će biti poništene."
+                : "Želite li vratiti formu na prazno stanje? Svi uneseni podaci će biti obrisani."}
             </p>
           </div>
           <div className="mt-6 flex justify-end gap-3">
@@ -456,10 +492,10 @@ const ManualEntry = forwardRef(
               Odustani
             </button>
             <button
-              onClick={handleConfirmClear}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              onClick={handleConfirmReset}
+              className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
             >
-              Obriši sve
+              {isEditMode ? "Vrati originalno" : "Vrati prazno"}
             </button>
           </div>
         </div>
@@ -477,7 +513,26 @@ const ManualEntry = forwardRef(
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-medium text-gray-900">Ručni unos</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-medium text-gray-900">Ručni unos</h2>
+            {!isLoadingDateData && (
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-2
+                  ${
+                    isEditMode
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-green-100 text-green-800"
+                  }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isEditMode ? "bg-yellow-400" : "bg-green-400"
+                  }`}
+                />
+                {isEditMode ? "Uređivanje postojećeg" : "Novi unos"}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -486,35 +541,14 @@ const ManualEntry = forwardRef(
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => handleDateChange(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={isLoadingDateData}
               />
             </div>
             <button
-              onClick={() => {
-                fetchLogsForCopy();
-                setShowCopyModal(true);
-              }}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <svg
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-              Kopiraj postojeći
-            </button>
-            <button
-              onClick={handleClearForm}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              onClick={handleResetForm}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
             >
               <svg
                 className="h-4 w-4 mr-2 text-gray-500"
@@ -526,10 +560,10 @@ const ManualEntry = forwardRef(
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              Očisti formu
+              Vrati na početno
             </button>
             <button
               onClick={handleSave}
@@ -567,81 +601,92 @@ const ManualEntry = forwardRef(
         </div>
 
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200"
-                >
-                  #
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                >
-                  Šifra
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                >
-                  Artikl
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                >
-                  Ulaz
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Izlaz
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {artikli.map((artikl, index) => (
-                <tr key={artikl.docId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
-                    {index + 1}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
-                    {artikl.sifra}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
-                    {artikl.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                    <input
-                      type="number"
-                      min="0"
-                      value={entries[artikl.slug]?.ulaz}
-                      onChange={(e) =>
-                        handleInputChange(artikl.slug, "ulaz", e.target.value)
-                      }
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="0"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input
-                      type="number"
-                      min="0"
-                      value={entries[artikl.slug]?.izlaz}
-                      onChange={(e) =>
-                        handleInputChange(artikl.slug, "izlaz", e.target.value)
-                      }
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="0"
-                    />
-                  </td>
+          {isLoadingDateData ? (
+            <div className="flex justify-center items-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+              <span className="ml-2 text-gray-500">Učitavam podatke...</span>
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200"
+                  >
+                    #
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                  >
+                    Šifra
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                  >
+                    Artikl
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                  >
+                    Ulaz
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Izlaz
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {artikli.map((artikl, index) => (
+                  <tr key={artikl.docId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
+                      {artikl.sifra}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
+                      {artikl.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                      <input
+                        type="number"
+                        min="0"
+                        value={entries[artikl.slug]?.ulaz}
+                        onChange={(e) =>
+                          handleInputChange(artikl.slug, "ulaz", e.target.value)
+                        }
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="0"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="number"
+                        min="0"
+                        value={entries[artikl.slug]?.izlaz}
+                        onChange={(e) =>
+                          handleInputChange(
+                            artikl.slug,
+                            "izlaz",
+                            e.target.value
+                          )
+                        }
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="0"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <UpdateConfirmationModal
@@ -649,6 +694,7 @@ const ManualEntry = forwardRef(
           onClose={() => {
             setShowUpdateModal(false);
             setPendingStavke(null);
+            setIsSaving(false);
           }}
           onConfirm={() => saveData(pendingStavke, "UPDATE")}
           date={new Date(selectedDate)}
@@ -656,7 +702,7 @@ const ManualEntry = forwardRef(
 
         {showCopyModal && <CopyModal />}
 
-        {showClearConfirmModal && <ClearConfirmationModal />}
+        {showClearConfirmModal && <ResetConfirmationModal />}
       </div>
     );
   }
