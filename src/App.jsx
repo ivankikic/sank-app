@@ -10,11 +10,26 @@ import SettingsPage from "./pages/SettingsPage";
 import "./App.css";
 import { getDoc, doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { signInAnonymously } from "firebase/auth";
+import { auth } from "./firebase";
 
 function App() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [appSettings, setAppSettings] = useState(null);
+  const [authError, setAuthError] = useState(null);
+
+  // Dodaj ovo - Anonimna autentifikacija
+  useEffect(() => {
+    signInAnonymously(auth)
+      .then(() => {
+        console.log("Uspješna anonimna prijava");
+      })
+      .catch((error) => {
+        console.error("Greška pri anonimnoj prijavi:", error);
+        setAuthError(error.message);
+      });
+  }, []);
 
   // Dohvati postavke iz baze
   useEffect(() => {
@@ -105,6 +120,17 @@ function App() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  // Dodaj ovo - Prikaži grešku ako autentifikacija ne uspije
+  if (authError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">
+          Greška pri povezivanju s bazom podataka. Molimo pokušajte kasnije.
+        </div>
       </div>
     );
   }
