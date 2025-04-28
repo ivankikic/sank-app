@@ -6,7 +6,7 @@ import {
   getDocs,
   deleteDoc,
 } from "firebase/firestore";
-import { db } from "./firebase.js";
+import { db } from "../firebase.js";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
