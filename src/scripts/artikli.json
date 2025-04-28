@@ -1,0 +1,996 @@
+[
+  {
+    "name": "Cuve crno toccata dobravac a lit",
+    "slug": "cuve-crno-toccata-dobravac-a-lit",
+    "sifra": "10043",
+    "order": 1,
+    "minStock": 10
+  },
+  {
+    "name": "Malvazija lucija san tommaso a lit",
+    "slug": "malvazija-lucija-san-tommaso-a-lit",
+    "sifra": "10100",
+    "order": 2,
+    "minStock": 10
+  },
+  {
+    "name": "Vino malvazija suita a lit",
+    "slug": "vino-malvazija-suita-a-lit",
+    "sifra": "10148",
+    "order": 3,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo s okusima 0,50 l boca a kom",
+    "slug": "pivo-s-okusima-0-50-l-boca-a-kom",
+    "sifra": "10250",
+    "order": 4,
+    "minStock": 10
+  },
+  {
+    "name": "Liker limoncello a lit",
+    "slug": "liker-limoncello-a-lit",
+    "sifra": "10325",
+    "order": 5,
+    "minStock": 10
+  },
+  {
+    "name": "Hendrick's gin a lit",
+    "slug": "hendricks-gin-a-lit",
+    "sifra": "10334",
+    "order": 6,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky dewar's a lit",
+    "slug": "whisky-dewars-a-lit",
+    "sifra": "10337",
+    "order": 7,
+    "minStock": 10
+  },
+  {
+    "name": "Teran barbarossa tomaz a lit",
+    "slug": "teran-barbarossa-tomaz-a-lit",
+    "sifra": "10499",
+    "order": 8,
+    "minStock": 10
+  },
+  {
+    "name": "Teraninoteranetto liker a lit",
+    "slug": "teraninoteranetto-liker-a-lit",
+    "sifra": "10529",
+    "order": 9,
+    "minStock": 10
+  },
+  {
+    "name": "Sok voćni pago, rauch, cappy 0,20 l a kom",
+    "slug": "sok-vocni-pago-rauch-cappy-0-20-l-a-kom",
+    "sifra": "10654",
+    "order": 10,
+    "minStock": 10
+  },
+  {
+    "name": "Šećer smeđi i palmin običan a kg",
+    "slug": "secer-smedji-i-palmin-obican-a-kg",
+    "sifra": "10659",
+    "order": 11,
+    "minStock": 10
+  },
+  {
+    "name": "Voćni pire za šank a lit",
+    "slug": "vocni-pire-za-sank-a-lit",
+    "sifra": "10837",
+    "order": 12,
+    "minStock": 10
+  },
+  {
+    "name": "Stroh rum 80% a lit",
+    "slug": "stroh-rum-80-a-lit",
+    "sifra": "11185",
+    "order": 13,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo san servolo svijetlo 0,50 a kom",
+    "slug": "pivo-san-servolo-svijetlo-0-50-a-kom",
+    "sifra": "11195",
+    "order": 14,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo san servolo premium crveno 0,50 a k",
+    "slug": "pivo-san-servolo-premium-crveno-0-50-a-k",
+    "sifra": "11196",
+    "order": 15,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo san servolo tamno 0,50 a kom",
+    "slug": "pivo-san-servolo-tamno-0-50-a-kom",
+    "sifra": "11518",
+    "order": 16,
+    "minStock": 10
+  },
+  {
+    "name": "Pjenušac perla rose a lit",
+    "slug": "pjenusac-perla-rose-a-lit",
+    "sifra": "11621",
+    "order": 17,
+    "minStock": 10
+  },
+  {
+    "name": "Liker pimm's no. 1 a lit",
+    "slug": "liker-pimms-no-1-a-lit",
+    "sifra": "11686",
+    "order": 18,
+    "minStock": 10
+  },
+  {
+    "name": "Gin monkey 47 a lit",
+    "slug": "gin-monkey-47-a-lit",
+    "sifra": "11728",
+    "order": 19,
+    "minStock": 10
+  },
+  {
+    "name": "Gin mare a lit",
+    "slug": "gin-mare-a-lit",
+    "sifra": "11826",
+    "order": 20,
+    "minStock": 10
+  },
+  {
+    "name": "Ramazzotti rosato aperitivo a lit",
+    "slug": "ramazzotti-rosato-aperitivo-a-lit",
+    "sifra": "11945",
+    "order": 21,
+    "minStock": 10
+  },
+  {
+    "name": "Cremoso hladna krema a kg",
+    "slug": "cremoso-hladna-krema-a-kg",
+    "sifra": "12143",
+    "order": 22,
+    "minStock": 10
+  },
+  {
+    "name": "Sorbetin medina a kg",
+    "slug": "sorbetin-medina-a-kg",
+    "sifra": "12254",
+    "order": 23,
+    "minStock": 10
+  },
+  {
+    "name": "San pellegrino ton. water razni 0,20 kom",
+    "slug": "san-pellegrino-ton-water-razni-0-20-kom",
+    "sifra": "12293",
+    "order": 24,
+    "minStock": 10
+  },
+  {
+    "name": "Pjenušac vitu brut damjanić a lit",
+    "slug": "pjenusac-vitu-brut-damjanic-a-lit",
+    "sifra": "12531",
+    "order": 25,
+    "minStock": 10
+  },
+  {
+    "name": "Liker od bazge a lit",
+    "slug": "liker-od-bazge-a-lit",
+    "sifra": "12864",
+    "order": 26,
+    "minStock": 10
+  },
+  {
+    "name": "Liker italicus rosolio di bergamotto a l",
+    "slug": "liker-italicus-rosolio-di-bergamotto-a-l",
+    "sifra": "12865",
+    "order": 27,
+    "minStock": 10
+  },
+  {
+    "name": "Gin luftbremzer a lit",
+    "slug": "gin-luftbremzer-a-lit",
+    "sifra": "13076",
+    "order": 28,
+    "minStock": 10
+  },
+  {
+    "name": "Amaro-aperitivo nonino a lit",
+    "slug": "amaro-aperitivo-nonino-a-lit",
+    "sifra": "13222",
+    "order": 29,
+    "minStock": 10
+  },
+  {
+    "name": "Prosecco grande vento a lit",
+    "slug": "prosecco-grande-vento-a-lit",
+    "sifra": "13718",
+    "order": 30,
+    "minStock": 10
+  },
+  {
+    "name": "Cinzano vermouth a lit",
+    "slug": "cinzano-vermouth-a-lit",
+    "sifra": "13757",
+    "order": 31,
+    "minStock": 10
+  },
+  {
+    "name": "Rose xtrian veralda a lit",
+    "slug": "rose-xtrian-veralda-a-lit",
+    "sifra": "13939",
+    "order": 32,
+    "minStock": 10
+  },
+  {
+    "name": "San pellegrino ginger beer 0,20 l kom",
+    "slug": "san-pellegrino-ginger-beer-0-20-l-kom",
+    "sifra": "14051",
+    "order": 33,
+    "minStock": 10
+  },
+  {
+    "name": "Aperitivo ora d'oro a lit",
+    "slug": "aperitivo-ora-doro-a-lit",
+    "sifra": "14670",
+    "order": 34,
+    "minStock": 10
+  },
+  {
+    "name": "Prosecco biologico amets a lit",
+    "slug": "prosecco-biologico-amets-a-lit",
+    "sifra": "14682",
+    "order": 35,
+    "minStock": 10
+  },
+  {
+    "name": "Aperitivo savoia americano rosso a lit",
+    "slug": "aperitivo-savoia-americano-rosso-a-lit",
+    "sifra": "14866",
+    "order": 36,
+    "minStock": 10
+  },
+  {
+    "name": "Spezi 0,25 l a kom",
+    "slug": "spezi-0-25-l-a-kom",
+    "sifra": "14729",
+    "order": 37,
+    "minStock": 10
+  },
+  {
+    "name": "AMBALAŽA OŽUJSKO 0,5/20",
+    "slug": "ambalaza-ozujsko-0-5-20",
+    "sifra": "4011562",
+    "order": 38,
+    "minStock": 10
+  },
+  {
+    "name": "Mineralna voda s okusima 0,25 a kom",
+    "slug": "mineralna-voda-s-okuzima-0-25-a-kom",
+    "sifra": "4906",
+    "order": 39,
+    "minStock": 10
+  },
+  {
+    "name": "Liker menta (creme de mirt) a lit",
+    "slug": "liker-menta-creme-de-mirt-a-lit",
+    "sifra": "4919",
+    "order": 40,
+    "minStock": 10
+  },
+  {
+    "name": "Rum captain morgan a lit",
+    "slug": "rum-captain-morgan-a-lit",
+    "sifra": "4928",
+    "order": 41,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo stella, heineken bezalk 0,33l a kom",
+    "slug": "pivo-stella-heineken-bezalk-0-33l-a-kom",
+    "sifra": "5017",
+    "order": 42,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled rumenko kids tuba a kom",
+    "slug": "sladoled-rumenko-kids-tuba-a-kom",
+    "sifra": "5031",
+    "order": 43,
+    "minStock": 10
+  },
+  {
+    "name": "Šlag pjena sprej-vrhnje (za šank) kg",
+    "slug": "slag-pjena-sprej-vrhnje-za-sank-kg",
+    "sifra": "5042",
+    "order": 44,
+    "minStock": 10
+  },
+  {
+    "name": "Biska (rakija s ljekovitim biljem) a lit",
+    "slug": "biska-rakija-s-ljekovitim-biljem-a-lit",
+    "sifra": "5082",
+    "order": 45,
+    "minStock": 10
+  },
+  {
+    "name": "Mlijeko a lit",
+    "slug": "mlijeko-a-lit",
+    "sifra": "5083",
+    "order": 46,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled u banjici A klase a l-kg",
+    "slug": "sladoled-u-banjici-a-klase-a-l-kg",
+    "sifra": "5092",
+    "order": 47,
+    "minStock": 10
+  },
+  {
+    "name": "Limun a kg",
+    "slug": "limun-a-kg",
+    "sifra": "5117",
+    "order": 48,
+    "minStock": 10
+  },
+  {
+    "name": "Sirup monin, brizard, giffard luxard a lit",
+    "slug": "sirup-monin-brizard-giffard-luxard-a-lit",
+    "sifra": "5130",
+    "order": 49,
+    "minStock": 10
+  },
+  {
+    "name": "Kava crna a kg",
+    "slug": "kava-crna-a-kg",
+    "sifra": "5136",
+    "order": 50,
+    "minStock": 10
+  },
+  {
+    "name": "Vrhnje a lit",
+    "slug": "vrhnje-a-lit",
+    "sifra": "5153",
+    "order": 51,
+    "minStock": 10
+  },
+  {
+    "name": "Čokolada za kuhanje a kg",
+    "slug": "cokolada-za-kuhanje-a-kg",
+    "sifra": "5160",
+    "order": 52,
+    "minStock": 10
+  },
+  {
+    "name": "Ananas a kg",
+    "slug": "ananas-a-kg",
+    "sifra": "5195",
+    "order": 53,
+    "minStock": 10
+  },
+  {
+    "name": "Naranča a kg",
+    "slug": "naranca-a-kg",
+    "sifra": "5257",
+    "order": 54,
+    "minStock": 10
+  },
+  {
+    "name": "Min. voda gazirana domaća a lit",
+    "slug": "min-voda-gazirana-domaca-a-lit",
+    "sifra": "5261",
+    "order": 55,
+    "minStock": 10
+  },
+  {
+    "name": "Grejp svježi cijeli a kg",
+    "slug": "grejp-svjezi-cijeli-a-kg",
+    "sifra": "5290",
+    "order": 56,
+    "minStock": 10
+  },
+  {
+    "name": "Začin razni ostali a kg",
+    "slug": "zacin-razni-ostali-a-kg",
+    "sifra": "5296",
+    "order": 57,
+    "minStock": 10
+  },
+  {
+    "name": "Vodka absolut blu a lit",
+    "slug": "vodka-absolut-blu-a-lit",
+    "sifra": "5315",
+    "order": 58,
+    "minStock": 10
+  },
+  {
+    "name": "Pelinkovac a lit",
+    "slug": "pelinkovac-a-lit",
+    "sifra": "5321",
+    "order": 59,
+    "minStock": 10
+  },
+  {
+    "name": "Šljivovica a lit",
+    "slug": "sljivovica-a-lit",
+    "sifra": "5326",
+    "order": 60,
+    "minStock": 10
+  },
+  {
+    "name": "Travarica a lit",
+    "slug": "travarica-a-lit",
+    "sifra": "5327",
+    "order": 61,
+    "minStock": 10
+  },
+  {
+    "name": "Rakija medenica a lit",
+    "slug": "rakija-medenica-a-lit",
+    "sifra": "5330",
+    "order": 62,
+    "minStock": 10
+  },
+  {
+    "name": "Rum bacardi a lit",
+    "slug": "rum-bacardi-a-lit",
+    "sifra": "5331",
+    "order": 63,
+    "minStock": 10
+  },
+  {
+    "name": "Remy martin a lit",
+    "slug": "remy-martin-a-lit",
+    "sifra": "5332",
+    "order": 64,
+    "minStock": 10
+  },
+  {
+    "name": "Gin gordons a lit",
+    "slug": "gin-gordons-a-lit",
+    "sifra": "5334",
+    "order": 65,
+    "minStock": 10
+  },
+  {
+    "name": "Tanqueray gin a lit",
+    "slug": "tanqueray-gin-a-lit",
+    "sifra": "5335",
+    "order": 66,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky chivas regal a lit",
+    "slug": "whisky-chivas-regal-a-lit",
+    "sifra": "5337",
+    "order": 67,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky john walker red, rye i black a lit",
+    "slug": "whisky-john-walker-red-rye-i-black-a-lit",
+    "sifra": "5341",
+    "order": 68,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky jack daniels a lit",
+    "slug": "whisky-jack-daniels-a-lit",
+    "sifra": "5342",
+    "order": 69,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky jim beam a lit",
+    "slug": "whisky-jim-beam-a-lit",
+    "sifra": "5343",
+    "order": 70,
+    "minStock": 10
+  },
+  {
+    "name": "Liker banana a lit",
+    "slug": "liker-banana-a-lit",
+    "sifra": "5353",
+    "order": 71,
+    "minStock": 10
+  },
+  {
+    "name": "Liker grand marnier a lit",
+    "slug": "liker-grand-marnier-a-lit",
+    "sifra": "5355",
+    "order": 72,
+    "minStock": 10
+  },
+  {
+    "name": "Liker cointreau a lit",
+    "slug": "liker-cointreau-a-lit",
+    "sifra": "5357",
+    "order": 73,
+    "minStock": 10
+  },
+  {
+    "name": "Coca cola, cockta a lit",
+    "slug": "coca-cola-cockta-a-lit",
+    "sifra": "5366",
+    "order": 74,
+    "minStock": 10
+  },
+  {
+    "name": "Sokovi razni litarski a lit",
+    "slug": "sokovi-razni-litarski-a-lit",
+    "sifra": "5370",
+    "order": 75,
+    "minStock": 10
+  },
+  {
+    "name": "Cognac hennessy x.o 0,70 a lit",
+    "slug": "cognac-hennessy-xo-0-70-a-lit",
+    "sifra": "5385",
+    "order": 76,
+    "minStock": 10
+  },
+  {
+    "name": "Negaz. izvor domaća voda 0,75 l a kom",
+    "slug": "negaz-izvor-domaca-voda-0-75-l-a-kom",
+    "sifra": "5389",
+    "order": 77,
+    "minStock": 10
+  },
+  {
+    "name": "Negaz. izvorska domaća voda 0,50 l a kom",
+    "slug": "negaz-izvorska-domaca-voda-0-50-l-a-kom",
+    "sifra": "5402",
+    "order": 78,
+    "minStock": 10
+  },
+  {
+    "name": "Min. voda gazirana domaća 0,75 l a kom",
+    "slug": "min-voda-gazirana-domaca-0-75-l-a-kom",
+    "sifra": "5404",
+    "order": 79,
+    "minStock": 10
+  },
+  {
+    "name": "Liker tia maria a lit",
+    "slug": "liker-tia-maria-a-lit",
+    "sifra": "5413",
+    "order": 80,
+    "minStock": 10
+  },
+  {
+    "name": "Liker triple sec a lit",
+    "slug": "liker-triple-sec-a-lit",
+    "sifra": "5420",
+    "order": 81,
+    "minStock": 10
+  },
+  {
+    "name": "Tequila jose cuervo a lit",
+    "slug": "tequila-jose-cuervo-a-lit",
+    "sifra": "5432",
+    "order": 82,
+    "minStock": 10
+  },
+  {
+    "name": "Simić šljivovica a lit",
+    "slug": "simic-sljivovica-a-lit",
+    "sifra": "5446",
+    "order": 83,
+    "minStock": 10
+  },
+  {
+    "name": "Champ. royal brut pommery a lit",
+    "slug": "champ-royal-brut-pommery-a-lit",
+    "sifra": "5601",
+    "order": 84,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky jameson irish a lit",
+    "slug": "whisky-jameson-irish-a-lit",
+    "sifra": "5992",
+    "order": 85,
+    "minStock": 10
+  },
+  {
+    "name": "Whisky lagavulin 16 yo a lit",
+    "slug": "whisky-lagavulin-16-yo-a-lit",
+    "sifra": "5995",
+    "order": 86,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled štapić macho vanilija a kom",
+    "slug": "sladoled-stapic-macho-vanilija-a-kom",
+    "sifra": "6158",
+    "order": 87,
+    "minStock": 10
+  },
+  {
+    "name": "Kandirano voće a kg",
+    "slug": "kandirano-voce-a-kg",
+    "sifra": "6159",
+    "order": 88,
+    "minStock": 10
+  },
+  {
+    "name": "Slad king kornet dark velvet 220 ml a kom",
+    "slug": "slad-king-kornet-dark-velvet-220-ml-a-kom",
+    "sifra": "6180",
+    "order": 89,
+    "minStock": 10
+  },
+  {
+    "name": "Šećer serv/dijetalni 3-6 g a kom",
+    "slug": "secer-serv-dijetalni-3-6-g-a-kom",
+    "sifra": "6222",
+    "order": 90,
+    "minStock": 10
+  },
+  {
+    "name": "Min. voda gazirana domaća 0,25 l a kom",
+    "slug": "min-voda-gazirana-domaca-0-25-l-a-kom",
+    "sifra": "6225",
+    "order": 91,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled štapić snjeguljica a kom",
+    "slug": "sladoled-stapic-snjeguljica-a-kom",
+    "sifra": "6319",
+    "order": 92,
+    "minStock": 10
+  },
+  {
+    "name": "Cedevita fresh 340 ml a kom",
+    "slug": "cedevita-fresh-340-ml-a-kom",
+    "sifra": "6338",
+    "order": 93,
+    "minStock": 10
+  },
+  {
+    "name": "Slad. king clasic 30% manje šećera a kom",
+    "slug": "slad-king-clasic-30-posto-manje-secera-a-kom",
+    "sifra": "6342",
+    "order": 94,
+    "minStock": 10
+  },
+  {
+    "name": "Liker aperol a lit",
+    "slug": "liker-aperol-a-lit",
+    "sifra": "6368",
+    "order": 95,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo paulaner weissbier 0,50 l a kom",
+    "slug": "pivo-paulaner-weissbier-0-50-l-a-kom",
+    "sifra": "6388",
+    "order": 96,
+    "minStock": 10
+  },
+  {
+    "name": "Kava bez kofeina 5,5 gr - 7,0 gr a kom",
+    "slug": "kava-bez-kofeina-5-5gr-7-0gr-a-kom",
+    "sifra": "6392",
+    "order": 97,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled king obsession a kom",
+    "slug": "sladoled-king-obsession-a-kom",
+    "sifra": "6399",
+    "order": 98,
+    "minStock": 10
+  },
+  {
+    "name": "Cognac courvoisier vs/vsop a lit",
+    "slug": "cognac-courvoisier-vs-vsop-a-lit",
+    "sifra": "6404",
+    "order": 99,
+    "minStock": 10
+  },
+  {
+    "name": "Liker od kokosa a lit",
+    "slug": "liker-od-kokosa-a-lit",
+    "sifra": "6406",
+    "order": 100,
+    "minStock": 10
+  },
+  {
+    "name": "Jaegermeister a lit",
+    "slug": "jaegermeister-a-lit",
+    "sifra": "6408",
+    "order": 101,
+    "minStock": 10
+  },
+  {
+    "name": "Martini bianco/roso/dry a lit",
+    "slug": "martini-bianco-roso-dry-a-lit",
+    "sifra": "6414",
+    "order": 102,
+    "minStock": 10
+  },
+  {
+    "name": "Malvazija kv vina laguna a lit",
+    "slug": "malvazija-kv-vina-laguna-a-lit",
+    "sifra": "6418",
+    "order": 103,
+    "minStock": 10
+  },
+  {
+    "name": "Rose cabernet vina laguna a lit",
+    "slug": "rose-cabernet-vina-laguna-a-lit",
+    "sifra": "6427",
+    "order": 104,
+    "minStock": 10
+  },
+  {
+    "name": "Vodka strana a lit",
+    "slug": "vodka-strana-a-lit",
+    "sifra": "6433",
+    "order": 105,
+    "minStock": 10
+  },
+  {
+    "name": "Coca cola 0,25 l a kom",
+    "slug": "coca-cola-0-25-l-a-kom",
+    "sifra": "6438",
+    "order": 106,
+    "minStock": 10
+  },
+  {
+    "name": "Fanta i schweppes oranzade 0,25 l a kom",
+    "slug": "fanta-i-schweppes-oranzade-0-25-l-a-kom",
+    "sifra": "6440",
+    "order": 107,
+    "minStock": 10
+  },
+  {
+    "name": "Negaz/izvorska domać voda 0,33 l a kom",
+    "slug": "negaz-izvorska-domaca-voda-0-33-l-a-kom",
+    "sifra": "6442",
+    "order": 108,
+    "minStock": 10
+  },
+  {
+    "name": "Sprite 0,25 l a kom",
+    "slug": "sprite-0-25-l-a-kom",
+    "sifra": "6445",
+    "order": 109,
+    "minStock": 10
+  },
+  {
+    "name": "Liker amaro ramazotti a lit",
+    "slug": "liker-amaro-ramazotti-a-lit",
+    "sifra": "6449",
+    "order": 110,
+    "minStock": 10
+  },
+  {
+    "name": "Campari bitter a lit",
+    "slug": "campari-bitter-a-lit",
+    "sifra": "6452",
+    "order": 111,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo domaće svijetlo boca 0,50 l a kom",
+    "slug": "pivo-domace-svijetlo-boca-0-50-l-a-kom",
+    "sifra": "6459",
+    "order": 112,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo heineken 0,33 l a kom",
+    "slug": "pivo-heineken-0-33-l-a-kom",
+    "sifra": "6461",
+    "order": 113,
+    "minStock": 10
+  },
+  {
+    "name": "Pivo svijetlo točeno a lit",
+    "slug": "pivo-svijetlo-toceno-a-lit",
+    "sifra": "6462",
+    "order": 114,
+    "minStock": 10
+  },
+  {
+    "name": "Rakija juliška a lit",
+    "slug": "rakija-juliska-a-lit",
+    "sifra": "6469",
+    "order": 115,
+    "minStock": 10
+  },
+  {
+    "name": "Vino cabernet sauv. Laguna Histria a lit",
+    "slug": "vino-cabernet-sauv-laguna-histria-a-lit",
+    "sifra": "6477",
+    "order": 116,
+    "minStock": 10
+  },
+  {
+    "name": "Nescafe razni okusi vrećica a kom",
+    "slug": "nescafe-razni-okusi-vrecica-a-kom",
+    "sifra": "6490",
+    "order": 117,
+    "minStock": 10
+  },
+  {
+    "name": "Liker drambuie a lit",
+    "slug": "liker-drambuie-a-lit",
+    "sifra": "6546",
+    "order": 118,
+    "minStock": 10
+  },
+  {
+    "name": "Liker kahlua a lit",
+    "slug": "liker-kahlua-a-lit",
+    "sifra": "6548",
+    "order": 119,
+    "minStock": 10
+  },
+  {
+    "name": "Red bull 0,25 l a kom",
+    "slug": "red-bull-0-25-l-a-kom",
+    "sifra": "6554",
+    "order": 120,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled king harmony 90 ml a kom",
+    "slug": "sladoled-king-harmony-90-ml-a-kom",
+    "sifra": "6634",
+    "order": 121,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled kornet čokolada a kom",
+    "slug": "sladoled-kornet-cokolada-a-kom",
+    "sifra": "6635",
+    "order": 122,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled kornet vanilija a kom",
+    "slug": "sladoled-kornet-vanilija-a-kom",
+    "sifra": "6638",
+    "order": 123,
+    "minStock": 10
+  },
+  {
+    "name": "Slad. king kornet čokolada vanilija a kom",
+    "slug": "slad-king-kornet-cokolada-vanilija-a-kom",
+    "sifra": "6641",
+    "order": 124,
+    "minStock": 10
+  },
+  {
+    "name": "Slad. kornet strac. š. voće a kom",
+    "slug": "slad-kornet-stracatella-sumskovoce-a-kom",
+    "sifra": "6642",
+    "order": 125,
+    "minStock": 10
+  },
+  {
+    "name": "Sladoled kontiki jagoda a kom",
+    "slug": "sladoled-kontiki-jagoda-a-kom",
+    "sifra": "6643",
+    "order": 126,
+    "minStock": 10
+  },
+  {
+    "name": "Nescafe classic 2 gr a kom",
+    "slug": "nescafe-classic-2gr-a-kom",
+    "sifra": "6662",
+    "order": 127,
+    "minStock": 10
+  },
+  {
+    "name": "Vino chardonnay pilato a lit",
+    "slug": "vino-chardonnay-pilato-a-lit",
+    "sifra": "6711",
+    "order": 128,
+    "minStock": 10
+  },
+  {
+    "name": "Liker breskva a lit",
+    "slug": "liker-breskva-a-lit",
+    "sifra": "6737",
+    "order": 129,
+    "minStock": 10
+  },
+  {
+    "name": "Vino muškat žuti vina laguna a lit",
+    "slug": "vino-muskat-zuti-vina-laguna-a-lit",
+    "sifra": "6834",
+    "order": 130,
+    "minStock": 10
+  },
+  {
+    "name": "Vino malvazija festigia laguna a lit",
+    "slug": "vino-malvazija-festigia-laguna-a-lit",
+    "sifra": "6835",
+    "order": 131,
+    "minStock": 10
+  },
+  {
+    "name": "Vino merlot festigia laguna a lit",
+    "slug": "vino-merlot-festigia-laguna-a-lit",
+    "sifra": "6836",
+    "order": 132,
+    "minStock": 10
+  },
+  {
+    "name": "Limeta a kg",
+    "slug": "limeta-a-kg",
+    "sifra": "6841",
+    "order": 133,
+    "minStock": 10
+  },
+  {
+    "name": "Šećer sirup od trske za cocktaile a lit",
+    "slug": "secer-sirup-od-trske-za-cocktaile-a-lit",
+    "sifra": "6844",
+    "order": 134,
+    "minStock": 10
+  },
+  {
+    "name": "Cachaca (rum, rakija) a lit",
+    "slug": "cachaca-rum-rakija-a-lit",
+    "sifra": "6922",
+    "order": 135,
+    "minStock": 10
+  },
+  {
+    "name": "Vino aura matošević a lit",
+    "slug": "vino-aura-matosevic-a-lit",
+    "sifra": "6956",
+    "order": 136,
+    "minStock": 10
+  },
+  {
+    "name": "BAČVA PIVO 30 L OŽUJSKO",
+    "slug": "bacva-pivo-30l-ozujsko",
+    "sifra": "9001013",
+    "order": 137,
+    "minStock": 10
+  },
+  {
+    "name": "BOCE 0,25 L COCA COLA",
+    "slug": "boce-0-25l-coca-cola",
+    "sifra": "9001025",
+    "order": 138,
+    "minStock": 10
+  },
+  {
+    "name": "BOCE VODA 0,25 L",
+    "slug": "boce-voda-0-25l",
+    "sifra": "9001030",
+    "order": 139,
+    "minStock": 10
+  },
+  {
+    "name": "NOSILJKA COCA COLA 24M",
+    "slug": "nosiljka-coca-cola-24m",
+    "sifra": "9001038",
+    "order": 140,
+    "minStock": 10
+  },
+  {
+    "name": "BOCA PIVO OŽUJSKO 0,5L",
+    "slug": "boca-pivo-ozujsko-0-5l",
+    "sifra": "9001049",
+    "order": 141,
+    "minStock": 10
+  },
+  {
+    "name": "GAJBE VODA 24/1 PVC",
+    "slug": "gajbe-voda-24-1-pvc",
+    "sifra": "9001081",
+    "order": 142,
+    "minStock": 10
+  }
+]
