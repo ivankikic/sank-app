@@ -1,15 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "../firebase";
-import {
-  format,
-  parseISO,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  addDays,
-  addMonths,
-} from "date-fns";
+import { format, parseISO, subMonths, addDays, addMonths } from "date-fns";
 import { hr } from "date-fns/locale";
 import { Line, Bar, Pie } from "react-chartjs-2";
 import {

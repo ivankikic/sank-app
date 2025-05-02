@@ -70,6 +70,8 @@ const ManualEntry = forwardRef(
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
     const [isLoadingDateData, setIsLoadingDateData] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredArtikli, setFilteredArtikli] = useState([]);
 
     useEffect(() => {
       const loadData = async () => {
@@ -502,6 +504,21 @@ const ManualEntry = forwardRef(
       </div>
     );
 
+    // Update filtered artikli when search term or artikli changes
+    useEffect(() => {
+      if (searchTerm.trim() === "") {
+        setFilteredArtikli(artikli);
+      } else {
+        const term = searchTerm.toLowerCase();
+        const filtered = artikli.filter(
+          (artikl) =>
+            artikl.name.toLowerCase().includes(term) ||
+            artikl.sifra.toLowerCase().includes(term)
+        );
+        setFilteredArtikli(filtered);
+      }
+    }, [searchTerm, artikli]);
+
     if (isLoading) {
       return (
         <div className="flex justify-center items-center p-8">
@@ -601,6 +618,63 @@ const ManualEntry = forwardRef(
         </div>
 
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          {/* Search box */}
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Pretraži po nazivu ili šifri artikla..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setSearchTerm("")}
+                >
+                  <svg
+                    className="h-5 w-5 text-gray-400 hover:text-gray-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {searchTerm && (
+              <div className="mt-2 text-sm text-gray-500 text-left">
+                {filteredArtikli.length === 0
+                  ? "Nema rezultata za uneseni pojam."
+                  : `Pronađeno ${filteredArtikli.length} ${
+                      filteredArtikli.length === 1
+                        ? "artikl"
+                        : filteredArtikli.length < 5
+                        ? "artikla"
+                        : "artikala"
+                    }`}
+              </div>
+            )}
+          </div>
+
           {isLoadingDateData ? (
             <div className="flex justify-center items-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
@@ -643,7 +717,7 @@ const ManualEntry = forwardRef(
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {artikli.map((artikl, index) => (
+                {filteredArtikli.map((artikl, index) => (
                   <tr key={artikl.docId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
                       {index + 1}
