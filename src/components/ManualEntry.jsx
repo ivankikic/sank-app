@@ -55,9 +55,7 @@ const UpdateConfirmationModal = ({ isOpen, onClose, onConfirm, date }) => {
 const ManualEntry = forwardRef(
   ({ onLogAdded, onDirtyStateChange, initialCopyData, onDataCopied }, ref) => {
     const [artikli, setArtikli] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(
-      new Date().toISOString().split("T")[0]
-    );
+    const [selectedDate, setSelectedDate] = useState("");
     const [entries, setEntries] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -85,29 +83,7 @@ const ManualEntry = forwardRef(
             }))
             .sort((a, b) => (a.order || 0) - (b.order || 0));
           setArtikli(artikliData);
-
-          const savedEntries = localStorage.getItem("manualEntryData");
-          if (savedEntries) {
-            try {
-              const parsed = JSON.parse(savedEntries);
-              const lastModified = new Date(parsed.lastModified);
-              const now = new Date();
-              const hoursDiff = (now - lastModified) / (1000 * 60 * 60);
-
-              if (hoursDiff < 24) {
-                setSelectedDate(parsed.date);
-                setEntries(parsed.entries);
-                setIsDirty(true);
-                onDirtyStateChange?.(true);
-              } else {
-                await fetchDataForDate(new Date().toISOString().split("T")[0]);
-              }
-            } catch (e) {
-              await fetchDataForDate(new Date().toISOString().split("T")[0]);
-            }
-          } else {
-            await fetchDataForDate(new Date().toISOString().split("T")[0]);
-          }
+          setFilteredArtikli(artikliData);
         } catch (error) {
           console.error("Error fetching artikli:", error);
           toast.error("Greška pri dohvaćanju artikala");
@@ -219,7 +195,18 @@ const ManualEntry = forwardRef(
     // Modificiraj dio gdje se mijenja datum
     const handleDateChange = async (newDate) => {
       setSelectedDate(newDate);
-      await fetchDataForDate(newDate);
+      if (newDate) {
+        await fetchDataForDate(newDate);
+      } else {
+        // Reset entries when date is cleared
+        const resetEntries = {};
+        artikli.forEach((artikl) => {
+          resetEntries[artikl.slug] = { ulaz: "", izlaz: "" };
+        });
+        setEntries(resetEntries);
+        setIsDirty(false);
+        onDirtyStateChange?.(false);
+      }
     };
 
     const saveData = async (stavke, type) => {
@@ -247,15 +234,18 @@ const ManualEntry = forwardRef(
           }),
         });
 
-        // Resetiraj formu
+        // Reset form and date after successful save
+        setSelectedDate("");
         const resetEntries = {};
         artikli.forEach((artikl) => {
           resetEntries[artikl.slug] = { ulaz: "", izlaz: "" };
         });
         setEntries(resetEntries);
-
         setIsDirty(false);
         onDirtyStateChange?.(false);
+
+        // Clear localStorage
+        localStorage.removeItem("manualEntryData");
 
         toast.success(
           type === "CREATE" ? "Uspješno spremljeno!" : "Uspješno ažurirano!"
@@ -532,7 +522,7 @@ const ManualEntry = forwardRef(
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-medium text-gray-900">Ručni unos</h2>
-            {!isLoadingDateData && (
+            {selectedDate && !isLoadingDateData && (
               <div
                 className={`px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-2
                   ${
@@ -563,205 +553,237 @@ const ManualEntry = forwardRef(
                 disabled={isLoadingDateData}
               />
             </div>
-            <button
-              onClick={handleResetForm}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-            >
-              <svg
-                className="h-4 w-4 mr-2 text-gray-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Vrati na početno
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {isSaving ? (
-                <>
+            {selectedDate && (
+              <>
+                <button
+                  onClick={handleResetForm}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                >
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    className="h-4 w-4 mr-2 text-gray-500"
                     fill="none"
                     viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
                     <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Spremam...
-                </>
-              ) : (
-                "Spremi"
-              )}
-            </button>
+                  Vrati na početno
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Spremam...
+                    </>
+                  ) : (
+                    "Spremi"
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          {/* Search box */}
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Pretraži po nazivu ili šifri artikla..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+        {!selectedDate ? (
+          <div className="bg-white shadow-sm rounded-lg p-8 text-center">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
-              {searchTerm && (
-                <button
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setSearchTerm("")}
-                >
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              Odaberite datum
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Za pregled i unos podataka, prvo morate odabrati datum.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+            {/* Search box */}
+            <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="h-5 w-5 text-gray-400 hover:text-gray-500"
+                    className="h-5 w-5 text-gray-400"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
                       clipRule="evenodd"
                     />
                   </svg>
-                </button>
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Pretraži po nazivu ili šifri artikla..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    <svg
+                      className="h-5 w-5 text-gray-400 hover:text-gray-500"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {searchTerm && (
+                <div className="mt-2 text-sm text-gray-500 text-left">
+                  {filteredArtikli.length === 0
+                    ? "Nema rezultata za uneseni pojam."
+                    : `Pronađeno ${filteredArtikli.length} ${
+                        filteredArtikli.length === 1
+                          ? "artikl"
+                          : filteredArtikli.length < 5
+                          ? "artikla"
+                          : "artikala"
+                      }`}
+                </div>
               )}
             </div>
-            {searchTerm && (
-              <div className="mt-2 text-sm text-gray-500 text-left">
-                {filteredArtikli.length === 0
-                  ? "Nema rezultata za uneseni pojam."
-                  : `Pronađeno ${filteredArtikli.length} ${
-                      filteredArtikli.length === 1
-                        ? "artikl"
-                        : filteredArtikli.length < 5
-                        ? "artikla"
-                        : "artikala"
-                    }`}
+
+            {isLoadingDateData ? (
+              <div className="flex justify-center items-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                <span className="ml-2 text-gray-500">Učitavam podatke...</span>
               </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200"
+                    >
+                      #
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                    >
+                      Šifra
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                    >
+                      Artikl
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                    >
+                      Ulaz
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Izlaz
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredArtikli.map((artikl, index) => (
+                    <tr key={artikl.docId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
+                        {artikl.sifra}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
+                        {artikl.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                        <input
+                          type="number"
+                          min="0"
+                          value={entries[artikl.slug]?.ulaz}
+                          onChange={(e) =>
+                            handleInputChange(
+                              artikl.slug,
+                              "ulaz",
+                              e.target.value
+                            )
+                          }
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="number"
+                          min="0"
+                          value={entries[artikl.slug]?.izlaz}
+                          onChange={(e) =>
+                            handleInputChange(
+                              artikl.slug,
+                              "izlaz",
+                              e.target.value
+                            )
+                          }
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="0"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
-
-          {isLoadingDateData ? (
-            <div className="flex justify-center items-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-              <span className="ml-2 text-gray-500">Učitavam podatke...</span>
-            </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200"
-                  >
-                    #
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                  >
-                    Šifra
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                  >
-                    Artikl
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                  >
-                    Ulaz
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Izlaz
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredArtikli.map((artikl, index) => (
-                  <tr key={artikl.docId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
-                      {index + 1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
-                      {artikl.sifra}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
-                      {artikl.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                      <input
-                        type="number"
-                        min="0"
-                        value={entries[artikl.slug]?.ulaz}
-                        onChange={(e) =>
-                          handleInputChange(artikl.slug, "ulaz", e.target.value)
-                        }
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="0"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="number"
-                        min="0"
-                        value={entries[artikl.slug]?.izlaz}
-                        onChange={(e) =>
-                          handleInputChange(
-                            artikl.slug,
-                            "izlaz",
-                            e.target.value
-                          )
-                        }
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="0"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        )}
 
         <UpdateConfirmationModal
           isOpen={showUpdateModal}
