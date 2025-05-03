@@ -136,7 +136,26 @@ function ArtikliPage() {
 
   const handleDelete = async () => {
     try {
+      // First delete the article
       await deleteDoc(doc(db, "artikli", selectedArtikl.docId));
+
+      // Get remaining articles and update their order
+      const remainingArtikli = artikli.filter(
+        (artikl) => artikl.docId !== selectedArtikl.docId
+      );
+
+      // Update the order of all remaining articles
+      const batch = writeBatch(db);
+      remainingArtikli.forEach((artikl, index) => {
+        if (artikl.order !== index) {
+          const artiklRef = doc(db, "artikli", artikl.docId);
+          batch.update(artiklRef, { order: index });
+        }
+      });
+
+      // Commit all updates in a batch
+      await batch.commit();
+
       toast.success("Artikl uspješno obrisan");
       fetchArtikli();
       setIsDeleteModalOpen(false);
