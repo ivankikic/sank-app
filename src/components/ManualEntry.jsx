@@ -212,26 +212,139 @@ const ManualEntry = forwardRef(
     const saveData = async (stavke, type) => {
       setIsSaving(true);
       try {
+        // Collect data about the original state before saving
+        const originalData = {};
+
+        if (type === "UPDATE") {
+          // If updating, retrieve the existing data to compare what changed
+          const docRef = doc(db, "dnevniUnosi", selectedDate);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            data.stavke.forEach((stavka) => {
+              originalData[stavka.artiklId] = {
+                ulaz: stavka.ulaz || 0,
+                izlaz: stavka.izlaz || 0,
+              };
+            });
+          }
+        }
+
+        // Get a list of all artikl IDs from both original and new data
+        const allArtiklIds = new Set([
+          ...Object.keys(originalData),
+          ...stavke.map((item) => item.artiklId),
+        ]);
+
+        // Track all changes including deletions and additions
+        const changedItems = [];
+
+        // Check each artikl ID for changes
+        allArtiklIds.forEach((artiklId) => {
+          // Find this item in the new data
+          const newItem = stavke.find((item) => item.artiklId === artiklId);
+
+          // Get old values (defaulting to 0 if not present)
+          const oldUlaz = Number(originalData[artiklId]?.ulaz || 0);
+          const oldIzlaz = Number(originalData[artiklId]?.izlaz || 0);
+
+          // Get new values (defaulting to 0 if not present or empty)
+          const newUlaz = newItem ? Number(newItem.ulaz || 0) : 0;
+          const newIzlaz = newItem ? Number(newItem.izlaz || 0) : 0;
+
+          // A change is detected if either:
+          // 1. The item is new (wasn't in original data but is in new data)
+          // 2. The item was removed (was in original data but not in new data)
+          // 3. The values have changed
+          const isNew = !originalData[artiklId] && newItem;
+          const wasRemoved = originalData[artiklId] && !newItem;
+          const valueChanged = oldUlaz !== newUlaz || oldIzlaz !== newIzlaz;
+          const hasChanged = isNew || wasRemoved || valueChanged;
+
+          // If changed and we have a new item, add it to our list
+          if (hasChanged && newItem) {
+            // Mark this item as changed
+            changedItems.push({
+              ...newItem,
+              artiklId,
+              isChanged: true,
+              originalUlaz: oldUlaz,
+              originalIzlaz: oldIzlaz,
+            });
+          }
+          // If an item was removed (existed before but not now), also count it as changed
+          else if (wasRemoved) {
+            changedItems.push({
+              artiklId,
+              ulaz: 0,
+              izlaz: 0,
+              isChanged: true,
+              isRemoved: true,
+              originalUlaz: oldUlaz,
+              originalIzlaz: oldIzlaz,
+            });
+          }
+        });
+
+        // Create a map for fast lookup of changed items
+        const changedItemsMap = new Map();
+        changedItems.forEach((item) => {
+          changedItemsMap.set(item.artiklId, item);
+        });
+
         // Spremi u dnevniUnosi
         await setDoc(doc(collection(db, "dnevniUnosi"), selectedDate), {
           datum: selectedDate,
           stavke,
         });
 
-        // Kreiraj log
+        // Kreiraj log with enhanced information
         await addDoc(collection(db, "logovi"), {
           type,
           date: selectedDate,
           timestamp: new Date().toISOString(),
           itemCount: stavke.length,
-          items: stavke.map((item) => {
-            const artikl = artikli.find((a) => a.slug === item.artiklId);
-            return {
-              ...item,
-              sifra: artikl?.sifra || "",
-              naziv: artikl?.name || item.artiklId,
-            };
-          }),
+          changedItemCount: changedItems.length,
+          items: [
+            // Include regular items from stavke
+            ...stavke.map((item) => {
+              const artikl = artikli.find((a) => a.slug === item.artiklId);
+
+              // Check if this item is changed using our map (faster than array search)
+              const isChanged = changedItemsMap.has(item.artiklId);
+
+              // Get the original values for this item
+              const originalUlaz = Number(
+                originalData[item.artiklId]?.ulaz || 0
+              );
+              const originalIzlaz = Number(
+                originalData[item.artiklId]?.izlaz || 0
+              );
+
+              // For each item, note whether it was changed and ensure all values are defined
+              return {
+                ...item,
+                sifra: artikl?.sifra || "",
+                name: artikl?.name || item.artiklId,
+                isChanged: isChanged,
+                // Make sure we don't pass undefined values to Firestore
+                originalUlaz: originalUlaz,
+                originalIzlaz: originalIzlaz,
+              };
+            }),
+            // Include removed items that aren't in stavke
+            ...changedItems
+              .filter((item) => item.isRemoved)
+              .map((item) => {
+                const artikl = artikli.find((a) => a.slug === item.artiklId);
+                return {
+                  ...item,
+                  sifra: artikl?.sifra || "",
+                  name: artikl?.name || item.artiklId,
+                };
+              }),
+          ],
         });
 
         // Reset form and date after successful save

@@ -273,6 +273,15 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium text-gray-900">
             Detalji promjene - {format(log.date, "dd.MM.yyyy")}
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({log.type === "CREATE" ? "Kreirano" : "Ažurirano"}:{" "}
+              {log.itemCount} stavki, izmjenjeno:{" "}
+              {log.changedItemCount ||
+                (log.type === "CREATE"
+                  ? log.itemCount
+                  : log.items?.filter((item) => item.isChanged).length || 0)}
+              )
+            </span>
           </h3>
           <div className="flex items-center space-x-4">
             <button
@@ -336,7 +345,12 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {log.items.map((item, index) => (
-              <tr key={index} className="hover:bg-gray-50">
+              <tr
+                key={index}
+                className={`hover:bg-gray-50 ${
+                  item.isChanged ? "bg-yellow-50" : ""
+                }`}
+              >
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center border-r border-gray-200">
                   {index + 1}
                 </td>
@@ -345,23 +359,52 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 text-left">
                   {item.name || artikli[item.artiklId] || item.artiklId}
+                  {item.isChanged && (
+                    <span className="ml-2 text-xs text-yellow-600 font-medium bg-yellow-100 px-2 py-0.5 rounded-full">
+                      {item.isRemoved ? "Obrisano" : "Izmjenjeno"}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200">
                   {item.ulaz > 0 ? (
-                    <span className="font-medium text-green-600">
-                      +{item.ulaz}
-                    </span>
+                    <div>
+                      <span className="font-medium text-green-600">
+                        +{item.ulaz}
+                      </span>
+                      {item.isChanged && item.originalUlaz !== undefined && (
+                        <span className="text-xs text-gray-500 block">
+                          (prije: {item.originalUlaz})
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-gray-400">0</span>
+                  )}
+                  {item.isRemoved && item.originalUlaz > 0 && (
+                    <span className="text-xs text-red-500 block">
+                      (obrisano: {item.originalUlaz})
+                    </span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                   {item.izlaz > 0 ? (
-                    <span className="font-medium text-red-600">
-                      -{item.izlaz}
-                    </span>
+                    <div>
+                      <span className="font-medium text-red-600">
+                        -{item.izlaz}
+                      </span>
+                      {item.isChanged && item.originalIzlaz !== undefined && (
+                        <span className="text-xs text-gray-500 block">
+                          (prije: {item.originalIzlaz})
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-gray-400">0</span>
+                  )}
+                  {item.isRemoved && item.originalIzlaz > 0 && (
+                    <span className="text-xs text-red-500 block">
+                      (obrisano: {item.originalIzlaz})
+                    </span>
                   )}
                 </td>
               </tr>
@@ -516,6 +559,12 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
                 </th>
                 <th
                   scope="col"
+                  className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Izmjenjeno
+                </th>
+                <th
+                  scope="col"
                   className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right"
                 >
                   Vrijeme unosa
@@ -550,6 +599,13 @@ const LogList = ({ refreshTrigger, onCopyLog }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {log.itemCount}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {log.changedItemCount ||
+                      (log.type === "CREATE"
+                        ? log.itemCount
+                        : log.items?.filter((item) => item.isChanged).length ||
+                          0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                     {new Date(log.timestamp)
