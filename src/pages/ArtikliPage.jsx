@@ -113,6 +113,12 @@ function ArtikliPage() {
         return;
       }
 
+      // Provjeri je li minStock validan broj
+      if (isNaN(newArtikl.minStock)) {
+        toast.error("Minimalno stanje mora biti broj");
+        return;
+      }
+
       const slug = trimmedName.toLowerCase().replace(/\s+/g, "-");
 
       await addDoc(collection(db, "artikli"), {
@@ -121,7 +127,7 @@ function ArtikliPage() {
         name: trimmedName,
         slug: slug,
         order: getNextOrder(),
-        minStock: parseInt(newArtikl.minStock) || 10,
+        minStock: newArtikl.minStock, // Spremi kao string, ne pretvaraj u number
       });
 
       fetchArtikli();
@@ -170,7 +176,7 @@ function ArtikliPage() {
     try {
       const trimmedName = editName.trim();
       const trimmedSifra = editSifra.trim();
-      const slug = trimmedName.toLowerCase().replace(/\s+/g, "-");
+      const slug = selectedArtikl.slug;
 
       if (!trimmedSifra) {
         toast.error("Šifra je obavezna");
@@ -185,12 +191,18 @@ function ArtikliPage() {
         return;
       }
 
+      // Provjeri je li editMinStock validan broj
+      if (isNaN(editMinStock)) {
+        toast.error("Minimalno stanje mora biti broj");
+        return;
+      }
+
       await updateDoc(doc(db, "artikli", selectedArtikl.docId), {
         name: trimmedName,
         sifra: trimmedSifra,
         slug: slug,
         order: selectedArtikl.order,
-        minStock: parseInt(editMinStock) || 10,
+        minStock: editMinStock, // Spremi kao string, ne pretvaraj u number
       });
 
       toast.success("Artikl uspješno ažuriran");
@@ -493,8 +505,8 @@ function ArtikliPage() {
                     <tbody className="bg-white divide-y divide-gray-100">
                       {filteredArtikli.map((artikl) => {
                         const currentStock = currentStocks[artikl.slug] || 0;
-                        const minStock = artikl.minStock || 10;
-                        const isLowStock = currentStock < minStock;
+                        const minStock = artikl.minStock || "10";
+                        const isLowStock = currentStock < Number(minStock);
 
                         return (
                           <tr key={artikl.docId} className="hover:bg-gray-50">
@@ -604,8 +616,7 @@ function ArtikliPage() {
                     Minimalno stanje
                   </label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
                     value={newArtikl.minStock}
                     onChange={(e) =>
                       setNewArtikl((prev) => ({
@@ -714,8 +725,7 @@ function ArtikliPage() {
                     Minimalno stanje
                   </label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
                     value={editMinStock}
                     onChange={(e) => setEditMinStock(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
