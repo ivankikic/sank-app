@@ -11,6 +11,7 @@ import {
 import { db } from "../firebase";
 import { Popover, Transition } from "@headlessui/react";
 import { Fragment } from "react";
+import { formatNumber, roundToFour } from "../utils/numberUtils";
 
 const StockAlerts = () => {
   const [alerts, setAlerts] = useState([]);
@@ -57,8 +58,10 @@ const StockAlerts = () => {
             if (!currentStock[stavka.artiklId]) {
               currentStock[stavka.artiklId] = 0;
             }
-            currentStock[stavka.artiklId] +=
-              (stavka.ulaz || 0) - (stavka.izlaz || 0);
+            currentStock[stavka.artiklId] = roundToFour(
+              currentStock[stavka.artiklId] +
+                roundToFour((stavka.ulaz || 0) - (stavka.izlaz || 0))
+            );
           });
         });
 
@@ -72,7 +75,7 @@ const StockAlerts = () => {
           .map((artikl) => ({
             id: artikl.id,
             name: artikl.name,
-            currentStock: currentStock[artikl.slug] || 0,
+            currentStock: roundToFour(currentStock[artikl.slug] || 0),
             minStock: artikl.minStock || 10,
           }));
 
@@ -172,10 +175,10 @@ const StockAlerts = () => {
                                   {alert.name}
                                 </td>
                                 <td className="px-4 py-2.5 text-sm text-center text-red-600 font-medium w-[100px] border-r border-gray-100">
-                                  {alert.currentStock}
+                                  {formatNumber(alert.currentStock)}
                                 </td>
                                 <td className="px-4 py-2.5 text-sm text-center text-gray-500 w-[100px]">
-                                  {alert.minStock}
+                                  {formatNumber(alert.minStock)}
                                 </td>
                               </tr>
                             ))}
