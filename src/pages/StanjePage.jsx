@@ -60,8 +60,8 @@ const StanjePage = () => {
         // 3. Dohvati podatke za tjedan
         const weeklyQ = query(
           collection(db, "dnevniUnosi"),
-          where("datum", ">=", weekStart.toISOString().split("T")[0]),
-          where("datum", "<=", weekEnd.toISOString().split("T")[0]),
+          where("datum", ">=", format(weekStart, "yyyy-MM-dd")),
+          where("datum", "<=", format(weekEnd, "yyyy-MM-dd")),
           orderBy("datum")
         );
 
@@ -75,7 +75,7 @@ const StanjePage = () => {
         // 4. Dohvati prethodno stanje
         const previousQ = query(
           collection(db, "dnevniUnosi"),
-          where("datum", "<", weekStart.toISOString().split("T")[0]),
+          where("datum", "<", format(weekStart, "yyyy-MM-dd")),
           orderBy("datum")
         );
 
@@ -83,12 +83,23 @@ const StanjePage = () => {
         const previousState = {};
 
         previousSnapshot.docs.forEach((doc) => {
+          const datum = doc.data().datum;
           const stavke = doc.data().stavke;
+
           stavke.forEach((stavka) => {
             if (!previousState[stavka.artiklId]) {
               previousState[stavka.artiklId] = 0;
             }
-            previousState[stavka.artiklId] += stavka.ulaz - stavka.izlaz;
+
+            // Koristi roundToFour za precizno zbrajanje s zaokruživanjem
+            const novoDnevnoStanje = roundToFour(
+              (stavka.ulaz || 0) - (stavka.izlaz || 0)
+            );
+            const novoUkupnoStanje = roundToFour(
+              previousState[stavka.artiklId] + novoDnevnoStanje
+            );
+
+            previousState[stavka.artiklId] = novoUkupnoStanje;
           });
         });
         setPreviousStanje(previousState);
@@ -109,10 +120,13 @@ const StanjePage = () => {
                   (s) => s.artiklId === artikl.slug
                 ) || [];
               const dnevnaPromjena = dayStavke.reduce(
-                (acc, stavka) => acc + (stavka.ulaz || 0) - (stavka.izlaz || 0),
+                (acc, stavka) =>
+                  roundToFour(
+                    acc + roundToFour((stavka.ulaz || 0) - (stavka.izlaz || 0))
+                  ),
                 0
               );
-              stanje += dnevnaPromjena;
+              stanje = roundToFour(stanje + dnevnaPromjena);
             });
 
             currentStocks[artikl.slug] = stanje;
@@ -171,14 +185,19 @@ const StanjePage = () => {
     sortedDates.forEach((date) => {
       const dayStavke =
         weeklyData[date]?.filter((s) => s.artiklId === artiklId) || [];
-      // Zbroji sve promjene za taj dan
+
+      // Zbroji sve promjene za taj dan s preciznim zaokruživanjem
       const dnevnaPromjena = dayStavke.reduce(
-        (acc, stavka) => acc + (stavka.ulaz || 0) - (stavka.izlaz || 0),
+        (acc, stavka) =>
+          roundToFour(
+            acc + roundToFour((stavka.ulaz || 0) - (stavka.izlaz || 0))
+          ),
         0
       );
-      stanje += dnevnaPromjena;
-    });
+      const novoStanje = roundToFour(stanje + dnevnaPromjena);
 
+      stanje = novoStanje;
+    });
     // Zaokruži konačno stanje na 4 decimale
     return roundToFour(stanje);
   };
