@@ -17,6 +17,7 @@ import {
   Legend,
   Filler,
 } from "chart.js";
+import { formatNumber, roundToFour } from "../utils/numberUtils";
 
 // Registriranje svih potrebnih komponenti Chart.js-a
 ChartJS.register(
@@ -122,7 +123,9 @@ const StatistikaPage = () => {
           if (!prodaja[stavka.artiklId]) {
             prodaja[stavka.artiklId] = 0;
           }
-          prodaja[stavka.artiklId] += stavka.izlaz;
+          prodaja[stavka.artiklId] = roundToFour(
+            prodaja[stavka.artiklId] + stavka.izlaz
+          );
         }
       });
     });
@@ -147,7 +150,9 @@ const StatistikaPage = () => {
           if (!ulaz[stavka.artiklId]) {
             ulaz[stavka.artiklId] = 0;
           }
-          ulaz[stavka.artiklId] += stavka.ulaz;
+          ulaz[stavka.artiklId] = roundToFour(
+            ulaz[stavka.artiklId] + stavka.ulaz
+          );
         }
       });
     });
@@ -233,7 +238,9 @@ const StatistikaPage = () => {
       if (podaciPoVremenu[timeKey]) {
         unos.stavke.forEach((stavka) => {
           if (selectedArtikli.includes(stavka.artiklId) && stavka.izlaz) {
-            podaciPoVremenu[timeKey][stavka.artiklId] += stavka.izlaz;
+            podaciPoVremenu[timeKey][stavka.artiklId] = roundToFour(
+              podaciPoVremenu[timeKey][stavka.artiklId] + stavka.izlaz
+            );
           }
         });
       }
@@ -274,7 +281,7 @@ const StatistikaPage = () => {
       let ukupnoIzlaz = 0;
       unos.stavke.forEach((stavka) => {
         if (stavka.izlaz) {
-          ukupnoIzlaz += stavka.izlaz;
+          ukupnoIzlaz = roundToFour(ukupnoIzlaz + stavka.izlaz);
         }
       });
       dnevnaProdaja[unos.datum] = ukupnoIzlaz;
@@ -422,7 +429,12 @@ const StatistikaPage = () => {
               Ukupno prodano
             </h2>
             <p className="text-2xl font-bold">
-              {Object.values(ukupnaProdaja).reduce((a, b) => a + b, 0)}
+              {formatNumber(
+                Object.values(ukupnaProdaja).reduce(
+                  (a, b) => roundToFour(a + b),
+                  0
+                )
+              )}
             </p>
           </div>
 
@@ -431,7 +443,12 @@ const StatistikaPage = () => {
               Ukupno zaprimljeno
             </h2>
             <p className="text-2xl font-bold">
-              {Object.values(ukupniUlaz).reduce((a, b) => a + b, 0)}
+              {formatNumber(
+                Object.values(ukupniUlaz).reduce(
+                  (a, b) => roundToFour(a + b),
+                  0
+                )
+              )}
             </p>
           </div>
         </div>
@@ -457,7 +474,7 @@ const StatistikaPage = () => {
                 <div>
                   <p className="text-gray-500">Količina</p>
                   <p className="text-lg font-semibold text-right">
-                    {daniProdaje.najviseProdan.kolicina}
+                    {formatNumber(daniProdaje.najviseProdan.kolicina)}
                   </p>
                 </div>
               </div>
@@ -485,7 +502,7 @@ const StatistikaPage = () => {
                 <div>
                   <p className="text-gray-500">Količina</p>
                   <p className="text-lg font-semibold text-right">
-                    {daniProdaje.najmanjeProdan.kolicina}
+                    {formatNumber(daniProdaje.najmanjeProdan.kolicina)}
                   </p>
                 </div>
               </div>
@@ -514,7 +531,7 @@ const StatistikaPage = () => {
                     <span>{artikl.name}</span>
                   </div>
                   <span className="font-medium text-indigo-600">
-                    {ukupnaProdaja[artikl.slug] || 0}
+                    {formatNumber(ukupnaProdaja[artikl.slug] || 0)}
                   </span>
                 </li>
               ))}
@@ -541,7 +558,7 @@ const StatistikaPage = () => {
                       <span>{artikl.name}</span>
                     </div>
                     <span className="font-medium text-indigo-600">
-                      {ukupnaProdaja[artikl.slug] || 0}
+                      {formatNumber(ukupnaProdaja[artikl.slug] || 0)}
                     </span>
                   </li>
                 ))}
@@ -574,10 +591,26 @@ const StatistikaPage = () => {
                         },
                       },
                     },
+                    x: {
+                      ticks: {
+                        callback: function (value) {
+                          return formatNumber(value);
+                        },
+                      },
+                    },
                   },
                   plugins: {
                     legend: {
                       display: false,
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function (context) {
+                          return `${context.label}: ${formatNumber(
+                            context.raw
+                          )}`;
+                        },
+                      },
                     },
                   },
                 }}
@@ -609,7 +642,9 @@ const StatistikaPage = () => {
                             0
                           );
                           const percentage = ((value / total) * 100).toFixed(1);
-                          return `${context.label}: ${value} (${percentage}%)`;
+                          return `${context.label}: ${formatNumber(
+                            value
+                          )} (${percentage}%)`;
                         },
                       },
                     },
@@ -646,6 +681,11 @@ const StatistikaPage = () => {
                 scales: {
                   y: {
                     beginAtZero: true,
+                    ticks: {
+                      callback: function (value) {
+                        return formatNumber(value);
+                      },
+                    },
                   },
                   x: {
                     ticks: {
@@ -658,6 +698,13 @@ const StatistikaPage = () => {
                   tooltip: {
                     mode: "index",
                     intersect: false,
+                    callbacks: {
+                      label: function (context) {
+                        return `${context.dataset.label}: ${formatNumber(
+                          context.raw
+                        )}`;
+                      },
+                    },
                   },
                   legend: {
                     position: "top",
