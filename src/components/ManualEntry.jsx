@@ -19,6 +19,7 @@ import {
 import { db } from "../firebase";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
+import { roundToFour, formatNumber } from "../utils/numberUtils";
 
 const UpdateConfirmationModal = ({ isOpen, onClose, onConfirm, date }) => {
   if (!isOpen) return null;
@@ -246,12 +247,18 @@ const ManualEntry = forwardRef(
           const newItem = stavke.find((item) => item.artiklId === artiklId);
 
           // Get old values (defaulting to 0 if not present)
-          const oldUlaz = Number(originalData[artiklId]?.ulaz || 0);
-          const oldIzlaz = Number(originalData[artiklId]?.izlaz || 0);
+          const oldUlaz = roundToFour(
+            Number(originalData[artiklId]?.ulaz || 0)
+          );
+          const oldIzlaz = roundToFour(
+            Number(originalData[artiklId]?.izlaz || 0)
+          );
 
           // Get new values (defaulting to 0 if not present or empty)
-          const newUlaz = newItem ? Number(newItem.ulaz || 0) : 0;
-          const newIzlaz = newItem ? Number(newItem.izlaz || 0) : 0;
+          const newUlaz = newItem ? roundToFour(Number(newItem.ulaz || 0)) : 0;
+          const newIzlaz = newItem
+            ? roundToFour(Number(newItem.izlaz || 0))
+            : 0;
 
           // A change is detected if either:
           // 1. The item is new (wasn't in original data but is in new data)
@@ -381,8 +388,8 @@ const ManualEntry = forwardRef(
           .filter(([_, values]) => values.ulaz || values.izlaz)
           .map(([artiklId, values]) => ({
             artiklId,
-            ulaz: Number(values.ulaz) || 0,
-            izlaz: Number(values.izlaz) || 0,
+            ulaz: roundToFour(Number(values.ulaz) || 0),
+            izlaz: roundToFour(Number(values.izlaz) || 0),
           }));
 
         if (stavke.length === 0) {

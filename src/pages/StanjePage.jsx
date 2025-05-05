@@ -15,6 +15,7 @@ import { toast } from "react-hot-toast";
 import { generateExcelReport } from "../utils/excelExport";
 import { getDoc, doc } from "firebase/firestore";
 import StockAlerts from "../components/StockAlerts";
+import { formatNumber, roundToFour } from "../utils/numberUtils";
 
 const StanjePage = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -142,13 +143,19 @@ const StanjePage = () => {
       weeklyData[date]?.filter((s) => s.artiklId === artiklId) || [];
 
     // Zbroji sve ulaze i izlaze za isti artikl u jednom danu
-    return dayStavke.reduce(
+    const result = dayStavke.reduce(
       (acc, stavka) => ({
         ulaz: acc.ulaz + (stavka.ulaz || 0),
         izlaz: acc.izlaz + (stavka.izlaz || 0),
       }),
       { ulaz: 0, izlaz: 0 }
     );
+
+    // Zaokruži vrijednosti na 4 decimale
+    return {
+      ulaz: roundToFour(result.ulaz),
+      izlaz: roundToFour(result.izlaz),
+    };
   };
 
   const calculateRunningStanje = (artiklId, upToDate) => {
@@ -172,7 +179,8 @@ const StanjePage = () => {
       stanje += dnevnaPromjena;
     });
 
-    return stanje;
+    // Zaokruži konačno stanje na 4 decimale
+    return roundToFour(stanje);
   };
 
   // Dodajte ovu funkciju za export podataka
@@ -366,7 +374,7 @@ const StanjePage = () => {
                       {artikl.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center border-r border-gray-200 font-medium min-w-[120px] sticky left-[200px] z-10 bg-white group-hover:bg-gray-50">
-                      {previousStanje[artikl.slug] || 0}
+                      {formatNumber(previousStanje[artikl.slug] || 0)}
                     </td>
                     {weekDays.map((date, idx) => {
                       const dailyData = calculateDailyStanje(artikl.slug, date);
@@ -376,7 +384,7 @@ const StanjePage = () => {
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200 min-w-[80px]">
                             {dailyData.ulaz > 0 ? (
                               <span className="text-green-600 font-medium">
-                                +{dailyData.ulaz}
+                                +{formatNumber(dailyData.ulaz)}
                               </span>
                             ) : (
                               <span className="text-gray-400">0</span>
@@ -385,14 +393,14 @@ const StanjePage = () => {
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200 min-w-[80px]">
                             {dailyData.izlaz > 0 ? (
                               <span className="text-red-600 font-medium">
-                                -{dailyData.izlaz}
+                                -{formatNumber(dailyData.izlaz)}
                               </span>
                             ) : (
                               <span className="text-gray-400">0</span>
                             )}
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-center border-r border-gray-200 font-medium min-w-[80px]">
-                            {stanje}
+                            {formatNumber(stanje)}
                           </td>
                         </Fragment>
                       );

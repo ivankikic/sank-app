@@ -17,6 +17,7 @@ import { toast } from "react-hot-toast";
 import { DragDropContext, Draggable } from "react-beautiful-dnd";
 import { StrictModeDroppable } from "./StrictModeDroppable";
 import { startOfDay } from "date-fns";
+import { formatNumber, roundToFour } from "../utils/numberUtils";
 
 function ArtikliPage() {
   const [artikli, setArtikli] = useState([]);
@@ -524,7 +525,7 @@ function ArtikliPage() {
                                 isLowStock ? "text-red-600" : "text-gray-900"
                               }`}
                             >
-                              {currentStock}
+                              {formatNumber(currentStock)}
                             </td>
                             <td className="px-6 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-100">
                               {minStock}
